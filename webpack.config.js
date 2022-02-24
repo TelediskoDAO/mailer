@@ -1,7 +1,7 @@
-const path = require('path')
+const path = require('path');
 
 module.exports = {
-  entry: './src/index.ts',
+  entry: './src/worker.ts',
   output: {
     filename: 'worker.js',
     path: path.join(__dirname, 'dist'),
@@ -10,6 +10,10 @@ module.exports = {
   mode: 'development',
   resolve: {
     extensions: ['.ts', '.tsx', '.js'],
+    fallback: {
+      crypto: require.resolve('crypto-browserify'),
+      stream: require.resolve('stream-browserify'),
+    },
   },
   module: {
     rules: [

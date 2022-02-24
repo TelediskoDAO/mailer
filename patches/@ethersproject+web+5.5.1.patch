@@ -1,0 +1,36 @@
+diff --git a/node_modules/@ethersproject/web/lib.esm/geturl.js b/node_modules/@ethersproject/web/lib.esm/geturl.js
+index f88f0a5..5104f27 100644
+--- a/node_modules/@ethersproject/web/lib.esm/geturl.js
++++ b/node_modules/@ethersproject/web/lib.esm/geturl.js
+@@ -24,7 +24,6 @@ export function getUrl(href, options) {
+             request.cache = "no-cache"; // *default, no-cache, reload, force-cache, only-if-cached
+             request.credentials = "same-origin"; // include, *same-origin, omit
+             request.redirect = "follow"; // manual, *follow, error
+-            request.referrer = "client"; // no-referrer, *client
+         }
+         ;
+         const response = yield fetch(href, request);
+diff --git a/node_modules/@ethersproject/web/lib/browser-geturl.js b/node_modules/@ethersproject/web/lib/browser-geturl.js
+index a62bf55..f9d34bc 100644
+--- a/node_modules/@ethersproject/web/lib/browser-geturl.js
++++ b/node_modules/@ethersproject/web/lib/browser-geturl.js
+@@ -57,7 +57,6 @@ function getUrl(href, options) {
+                         request.cache = "no-cache"; // *default, no-cache, reload, force-cache, only-if-cached
+                         request.credentials = "same-origin"; // include, *same-origin, omit
+                         request.redirect = "follow"; // manual, *follow, error
+-                        request.referrer = "client"; // no-referrer, *client
+                     }
+                     ;
+                     return [4 /*yield*/, fetch(href, request)];
+diff --git a/node_modules/@ethersproject/web/src.ts/browser-geturl.ts b/node_modules/@ethersproject/web/src.ts/browser-geturl.ts
+index 7770da7..5c91ae3 100644
+--- a/node_modules/@ethersproject/web/src.ts/browser-geturl.ts
++++ b/node_modules/@ethersproject/web/src.ts/browser-geturl.ts
+@@ -20,7 +20,6 @@ export async function getUrl(href: string, options?: Options): Promise<GetUrlRes
+         request.cache = <RequestCache>"no-cache";        // *default, no-cache, reload, force-cache, only-if-cached
+         request.credentials = <RequestCredentials>"same-origin";  // include, *same-origin, omit
+         request.redirect = <RequestRedirect>"follow";    // manual, *follow, error
+-        request.referrer = "client";                     // no-referrer, *client
+     };
+ 
+     const response = await fetch(href, request);
