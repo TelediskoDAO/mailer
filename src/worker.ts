@@ -1,7 +1,7 @@
 //import { handleRequest } from './handler'
 import { ethers } from 'ethers'
 
-const CONTRACT_ADDRESS = '0xE84aCBE831EE9A435a9864F53DF3C8beb84ce0f6'
+const CONTRACT_ADDRESS = '0x3E3fCa9Da850E22495590b7482043ad61e24CE09'
 
 const ABI = [
   {
@@ -15,20 +15,18 @@ const ABI = [
   },
 ]
 
-const provider = new ethers.providers.JsonRpcProvider(
-  'https://rinkeby.infura.io/v3/0e6b0dec423b4763af39a538fc7dcbf7',
+const provider = new ethers.providers.InfuraProvider(
   'rinkeby',
+  '0e6b0dec423b4763af39a538fc7dcbf7',
 )
-const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI)
+const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider)
 
 async function handleRequest(request: Request): Promise<Response> {
-  var response = new Response('diocane')
-  try {
-    const block = await provider.getGasPrice()
-    response = new Response(block.toString())
-  } catch (error) {
-    console.log(error)
-  }
+  var filter = contract.filters.ResolutionCreated()
+  let events = await contract.queryFilter(filter, 14263618, 14269618)
+  console.log(events)
+  const response = new Response('Hello')
+
   return response
 }
 
