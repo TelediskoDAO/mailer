@@ -12,9 +12,11 @@ command = "npm install && npm run build"
 format = "service-worker"
 
 [secrets]
-# ZOHO_AUTH_TOKEN
+# ZOHO_CLIENT_ID
+# ZOHO_CLIENT_SECRET
+# ZOHO_REFRESH_TOKEN
 
 [miniflare]
 env_path = ".env.test"             # --env
-kv_persist = true                  # --kv-persist
+kv_persist = false                  # --kv-persist
 cache_persist = "./cache"          # --cache-persist

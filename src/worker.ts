@@ -1,9 +1,11 @@
 //import { handleRequest } from './handler'
 import { ethers } from 'ethers'
 
-const ZOHO_API = 'https://mail.zoho.com/api/accounts/<accountId>/messages'
-const ZOHO_AUTH_TOKEN = 'noidea'
+const ZOHO_API_MAIL =
+  'https://mail.zoho.com/api/accounts/3715513000000008001/messages'
+const ZOHO_API_AUTH = 'https://accounts.zoho.com/oauth/v2/token'
 const CONTRACT_ADDRESS = '0x3E3fCa9Da850E22495590b7482043ad61e24CE09'
+const CONTRACT_GENESIS_BLOCK = 10203587
 const ABI = [
   'event ResolutionCreated(address indexed from, uint256 indexed resolutionId)',
 ]
@@ -14,11 +16,35 @@ const provider = new ethers.providers.InfuraProvider(
 )
 const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider)
 
+async function authZoho(): Promise<string> {
+  const authTokenResponse = await fetch(ZOHO_API_AUTH, {
+    body: `client_id=${ZOHO_CLIENT_ID}&client_secret=${ZOHO_CLIENT_SECRET}&refresh_token=${ZOHO_REFRESH_TOKEN}&grant_type=refresh_token`,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    method: 'POST',
+  })
+
+  return JSON.parse(await authTokenResponse.text())['access_token']
+}
+
 async function handleRequest(request: Request): Promise<Response> {
   var filter = contract.filters.ResolutionCreated()
-  let events = await contract.queryFilter(filter, 10203587, 'latest')
+
+  const lastBlock = await MAIN_NAMESPACE.get('lastBlock')
+  let events = await contract.queryFilter(
+    filter,
+    lastBlock ? Number(lastBlock) : CONTRACT_GENESIS_BLOCK,
+    'latest',
+  )
+
+  console.log(await MAIN_NAMESPACE.get('lastBlock'))
+
+  const authToken = await authZoho()
+  console.log(authToken)
 
   var results: string[] = []
+
   await Promise.all(
     events.map(async (event) => {
       if (event.args !== undefined) {
@@ -27,16 +53,16 @@ async function handleRequest(request: Request): Promise<Response> {
         const address = content[0].toString()
         const resolutionId = content[1].toString()
         const mailBody = {
-          fromAddress: 'mailer@teledisko.com',
-          toAddress: 'miotto@posteo.de',
+          fromAddress: 'teledisko@teledisko.com',
+          toAddress: 'alberto@granzotto.net',
           subject: 'New Pre-Draft to Review',
-          content: `Hi Benjamin, the wallet ${address} has created a new pre-draft. Would you mind reviewing it at https://dao.teledisko.com/resolutions/${resolutionId}.`,
+          content: `Hi Benjamin, the wallet ${address} has created a new pre-draft. Would you mind reviewing it at https://dao.teledisko.com/#resolutions/${resolutionId}/edit .`,
           askReceipt: 'yes',
         }
-        const result = await fetch(ZOHO_API, {
+        const result = await fetch(ZOHO_API_MAIL, {
           body: JSON.stringify(mailBody),
           headers: {
-            Authorization: `Zoho-oauthtoken ${ZOHO_AUTH_TOKEN}`,
+            Authorization: `Zoho-oauthtoken ${authToken}`,
             'Content-Type': 'application/json',
           },
           method: 'POST',
@@ -45,6 +71,11 @@ async function handleRequest(request: Request): Promise<Response> {
       }
     }),
   )
+
+  if (results.filter((code: string) => code !== '200').length === 0) {
+    const currentBlock = await provider.getBlockNumber()
+    await MAIN_NAMESPACE.put('lastBlock', currentBlock.toString())
+  }
 
   return new Response(results.join('\n'))
 }
