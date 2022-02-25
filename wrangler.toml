@@ -10,3 +10,11 @@ compatibility_date = "2022-02-22"
 command = "npm install && npm run build"
 [build.upload]
 format = "service-worker"
+
+[secrets]
+# ZOHO_AUTH_TOKEN
+
+[miniflare]
+env_path = ".env.test"             # --env
+kv_persist = true                  # --kv-persist
+cache_persist = "./cache"          # --cache-persist
