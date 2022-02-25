@@ -4,15 +4,7 @@ import { ethers } from 'ethers'
 const CONTRACT_ADDRESS = '0x3E3fCa9Da850E22495590b7482043ad61e24CE09'
 
 const ABI = [
-  {
-    type: 'event',
-    name: 'ResolutionCreated',
-    inputs: [
-      { indexed: true, name: 'from', type: 'address' },
-      { indexed: true, name: 'resolutionId', type: 'uint256' },
-    ],
-    anonymous: false,
-  },
+  'event ResolutionCreated(address indexed from, uint256 indexed resolutionId)',
 ]
 
 const provider = new ethers.providers.InfuraProvider(
@@ -23,11 +15,22 @@ const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider)
 
 async function handleRequest(request: Request): Promise<Response> {
   var filter = contract.filters.ResolutionCreated()
-  let events = await contract.queryFilter(filter, 14263618, 14269618)
-  console.log(events)
-  const response = new Response('Hello')
+  let events = await contract.queryFilter(filter, 10203587, 'latest')
 
-  return response
+  var messages: string[] = []
+  events.forEach((event) => {
+    if (event.args !== undefined) {
+      const content = event.args
+
+      const address = content[0].toString()
+      const resolutionId = content[1].toString()
+      messages.push(
+        `Address ${address} created pre draft with id ${resolutionId}`,
+      )
+    }
+  })
+
+  return new Response(messages.join('\n'))
 }
 
 addEventListener('fetch', (event) => {
