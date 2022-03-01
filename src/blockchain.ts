@@ -1,40 +1,52 @@
-import { ethers } from 'ethers'
+const RESOLUTIONS_QUERY = (timestamp: string) => `
+  query GetResolutions {
+    resolutions(orderBy: createTimestamp, orderDirection: asc, where: {createTimestamp_gt: ${timestamp}}) {
+      id
+      createTimestamp
+    }
+  }
+`
 
-const ABI = [
-  'event ResolutionCreated(address indexed from, uint256 indexed resolutionId)',
-]
-const PROVIDER = new ethers.providers.InfuraProvider(
-  'rinkeby',
-  '0e6b0dec423b4763af39a538fc7dcbf7',
-)
-const CONTRACT = new ethers.Contract(CONTRACT_ADDRESS, ABI, PROVIDER)
-
-type ResolutionCreatedEvent = {
-  address: string
-  resolutionId: string
+type ResolutionData = {
+  id: string
+  createTimestamp: string
 }
 
-export async function getLatestEvents(): Promise<ResolutionCreatedEvent[]> {
-  var filter = CONTRACT.filters.ResolutionCreated()
-  const lastBlock = await MAIN_NAMESPACE.get('lastBlock')
-  const startBlock = Number(lastBlock ? lastBlock : CONTRACT_GENESIS_BLOCK)
-  let events = await CONTRACT.queryFilter(filter, startBlock, 'latest')
-
-  return events
-    .filter((event) => event.args !== undefined)
-    .map((event) => {
-      const content = event.args!
-
-      return {
-        address: content[0].toString(),
-        resolutionId: content[1].toString(),
-      }
-    })
+type ResolutionArray = {
+  resolutions: ResolutionData[]
 }
 
-export async function checkpoint(responseCodes: string[]) {
+type GraphResponse = {
+  data: ResolutionArray
+}
+
+async function fetchFromGraphql(query: string) {
+  const response = await fetch(SUBGRAPH_API, {
+    method: 'POST',
+    body: JSON.stringify({
+      query,
+    }),
+  })
+
+  return await response.json()
+}
+
+export async function getLatestResolutionIds(): Promise<ResolutionData[]> {
+  var lastResolutionId = await MAIN_NAMESPACE.get('lastTimestamp')
+  lastResolutionId = lastResolutionId ? lastResolutionId : '0'
+
+  const response = (await fetchFromGraphql(
+    RESOLUTIONS_QUERY(lastResolutionId),
+  )) as GraphResponse
+
+  return response.data.resolutions
+}
+
+export async function checkpoint(
+  responseCodes: string[],
+  lastTimestamp: string,
+) {
   if (responseCodes.filter((code) => code !== '200').length === 0) {
-    const currentBlock = await PROVIDER.getBlockNumber()
-    await MAIN_NAMESPACE.put('lastBlock', currentBlock.toString())
+    await MAIN_NAMESPACE.put('lastTimestamp', lastTimestamp)
   }
 }

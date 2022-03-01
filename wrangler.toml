@@ -10,17 +10,16 @@ kv_namespaces = [
 ]
 
 [build]
-command = "npm install && npm run postinstall && npm run build"
+command = "npm install && npm run build"
 [build.upload]
 format = "service-worker"
 
 [vars]
 ZOHO_API_MAIL = "https://mail.zoho.com/api/accounts/3715513000000008001/messages"
 ZOHO_API_AUTH = "https://accounts.zoho.com/oauth/v2/token"
-CONTRACT_ADDRESS = "0x3E3fCa9Da850E22495590b7482043ad61e24CE09"
-CONTRACT_GENESIS_BLOCK = 10203587
+SUBGRAPH_API = "https://api.thegraph.com/subgraphs/name/telediskodao/resolution"
 EMAIL_FROM = "teledisko@teledisko.com"
-EMAIL_TO = "alberto@granzotto.net"
+EMAIL_TO = "miotto@posteo.de"
 EMAIL_CC = "miotto@posteo.de,stefano.ceschib@gmail.com"
 
 [secrets]

@@ -9,7 +9,6 @@ declare global {
   const EMAIL_FROM: string
   const EMAIL_TO: string
   const EMAIL_CC: string
-  const CONTRACT_ADDRESS: string
-  const CONTRACT_GENESIS_BLOCK: string
+  const SUBGRAPH_API: string
   const MAIN_NAMESPACE: KVNamespace
 }

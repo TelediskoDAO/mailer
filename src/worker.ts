@@ -1,22 +1,27 @@
 //import { handleRequest } from './handler'
 import { getAccessToken, sendEmail } from './email'
-import { getLatestEvents, checkpoint } from './blockchain'
+import { getLatestResolutionIds, checkpoint } from './blockchain'
 
 async function handleRequest(request: Request): Promise<Response> {
   const accessToken = await getAccessToken()
-  const events = await getLatestEvents()
+  const resolutions = await getLatestResolutionIds()
   var responseCodes: string[] = []
 
-  await Promise.all(
-    events.map(async (event) => {
-      const body = `Hi Benjamin, the wallet ${event.address} has created a new pre-draft. Would you mind reviewing it at https://dao.teledisko.com/#resolutions/${event.resolutionId}/edit .`
+  if (resolutions.length > 0) {
+    await Promise.all(
+      resolutions.map(async (resolution) => {
+        const body = `Hi Benjamin, new pre-draft resolution created. Would you mind reviewing it at https://dao.teledisko.com/#resolutions/${resolution.id}/edit .`
 
-      const result = await sendEmail(body, accessToken)
-      responseCodes.push(result.status.toString())
-    }),
-  )
+        const result = await sendEmail(body, accessToken)
+        responseCodes.push(result.status.toString())
+      }),
+    )
 
-  await checkpoint(responseCodes)
+    await checkpoint(
+      responseCodes,
+      resolutions[resolutions.length - 1].createTimestamp,
+    )
+  }
 
   return new Response(responseCodes.join('\n'))
 }
