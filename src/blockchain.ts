@@ -17,11 +17,8 @@ type ResolutionCreatedEvent = {
 export async function getLatestEvents(): Promise<ResolutionCreatedEvent[]> {
   var filter = CONTRACT.filters.ResolutionCreated()
   const lastBlock = await MAIN_NAMESPACE.get('lastBlock')
-  let events = await CONTRACT.queryFilter(
-    filter,
-    lastBlock ? Number(lastBlock) : CONTRACT_GENESIS_BLOCK,
-    'latest',
-  )
+  const startBlock = Number(lastBlock ? lastBlock : CONTRACT_GENESIS_BLOCK)
+  let events = await CONTRACT.queryFilter(filter, startBlock, 'latest')
 
   return events
     .filter((event) => event.args !== undefined)

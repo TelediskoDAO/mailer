@@ -1,10 +1,13 @@
 name = "pre-draft-mailer"
 type = "javascript"
 zone_id = ""
-account_id = ""
+account_id = "82321a9ff91bb528e4b1d1541178417f"
 route = ""
 workers_dev = true
 compatibility_date = "2022-02-22"
+kv_namespaces = [ 
+         { binding = "MAIN_NAMESPACE", id = "09c8b3bed203411e802783a907d54c32" }
+]
 
 [build]
 command = "npm install && npm run build"
@@ -12,13 +15,13 @@ command = "npm install && npm run build"
 format = "service-worker"
 
 [vars]
-ZOHO_API_MAIL=https://mail.zoho.com/api/accounts/3715513000000008001/messages
-ZOHO_API_AUTH=https://accounts.zoho.com/oauth/v2/token
-CONTRACT_ADDRESS=0x3E3fCa9Da850E22495590b7482043ad61e24CE09
-CONTRACT_GENESIS_BLOCK=10203587
-EMAIL_FROM=teledisko@teledisko.com
-EMAIL_TO=alberto@granzotto.net
-EMAIL_CC=miotto@posteo.de,stefano.ceschib@gmail.com
+ZOHO_API_MAIL = "https://mail.zoho.com/api/accounts/3715513000000008001/messages"
+ZOHO_API_AUTH = "https://accounts.zoho.com/oauth/v2/token"
+CONTRACT_ADDRESS = "0x3E3fCa9Da850E22495590b7482043ad61e24CE09"
+CONTRACT_GENESIS_BLOCK = 10203587
+EMAIL_FROM = "teledisko@teledisko.com"
+EMAIL_TO = "alberto@granzotto.net"
+EMAIL_CC = "miotto@posteo.de,stefano.ceschib@gmail.com"
 
 [secrets]
 # ZOHO_CLIENT_ID
