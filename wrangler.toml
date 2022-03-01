@@ -11,6 +11,15 @@ command = "npm install && npm run build"
 [build.upload]
 format = "service-worker"
 
+[vars]
+ZOHO_API_MAIL=https://mail.zoho.com/api/accounts/3715513000000008001/messages
+ZOHO_API_AUTH=https://accounts.zoho.com/oauth/v2/token
+CONTRACT_ADDRESS=0x3E3fCa9Da850E22495590b7482043ad61e24CE09
+CONTRACT_GENESIS_BLOCK=10203587
+EMAIL_FROM=teledisko@teledisko.com
+EMAIL_TO=alberto@granzotto.net
+EMAIL_CC=miotto@posteo.de,stefano.ceschib@gmail.com
+
 [secrets]
 # ZOHO_CLIENT_ID
 # ZOHO_CLIENT_SECRET
