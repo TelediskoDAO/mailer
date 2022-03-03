@@ -34,6 +34,10 @@ export async function sendEmails(
       if (response.status != 200) {
         failedIds!.push(resolutionId)
         console.error(await response.text())
+      } else {
+        console.log(
+          `Email ${resolutionId} sent. Response: ${await response.text()}`,
+        )
       }
     }),
   )
