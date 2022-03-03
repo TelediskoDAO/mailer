@@ -1,8 +1,8 @@
 //import { handleRequest } from './handler'
 import { getAccessToken, sendEmail } from './email'
-import { getLatestResolutionIds, checkpoint } from './blockchain'
+import { getLatestResolutionIds, checkpoint } from './resolutions'
 
-async function handleRequest(request: Request): Promise<Response> {
+async function handleEvent(event: FetchEvent): Promise<Response> {
   const accessToken = await getAccessToken()
   const resolutions = await getLatestResolutionIds()
   var responseCodes: string[] = []
@@ -20,6 +20,7 @@ async function handleRequest(request: Request): Promise<Response> {
     await checkpoint(
       responseCodes,
       resolutions[resolutions.length - 1].createTimestamp,
+      event,
     )
   }
 
@@ -27,5 +28,5 @@ async function handleRequest(request: Request): Promise<Response> {
 }
 
 addEventListener('fetch', (event) => {
-  event.respondWith(handleRequest(event.request))
+  event.respondWith(handleEvent(event))
 })
