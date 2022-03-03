@@ -1,16 +1,8 @@
-export async function getAccessToken(): Promise<string> {
-  const authTokenResponse = await fetch(ZOHO_API_AUTH, {
-    body: `client_id=${ZOHO_CLIENT_ID}&client_secret=${ZOHO_CLIENT_SECRET}&refresh_token=${ZOHO_REFRESH_TOKEN}&grant_type=refresh_token`,
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    method: 'POST',
-  })
+const FAILED_EMAILS_KEY = 'notEmailedResolutionIds'
 
-  return JSON.parse(await authTokenResponse.text())['access_token']
-}
+export async function sendEmail(resolutionId: string, accessToken: string) {
+  const body = `Hi Benjamin, new pre-draft resolution created. Would you mind reviewing it at https://dao.teledisko.com/#resolutions/${resolutionId}/edit .`
 
-export async function sendEmail(body: string, accessToken: string) {
   const mailBody = {
     fromAddress: EMAIL_FROM,
     toAddress: EMAIL_TO,
@@ -28,4 +20,37 @@ export async function sendEmail(body: string, accessToken: string) {
     },
     method: 'POST',
   })
+}
+
+export async function sendEmails(
+  ids: string[],
+  accessToken: string,
+  event: FetchEvent,
+) {
+  const failedIds: string[] = []
+  await Promise.all(
+    ids.map(async (resolutionId) => {
+      const response = await sendEmail(resolutionId, accessToken)
+      if (response.status != 200) {
+        failedIds!.push(resolutionId)
+        console.error(await response.text())
+      }
+    }),
+  )
+
+  event.waitUntil(
+    MAIN_NAMESPACE.put(FAILED_EMAILS_KEY, JSON.stringify(failedIds)),
+  )
+
+  return failedIds
+}
+
+export async function getFailedEmailResolutioIds() {
+  const notEmailedResolutionIds = await MAIN_NAMESPACE.get(FAILED_EMAILS_KEY)
+  var ids: string[] = []
+  if (notEmailedResolutionIds != null) {
+    ids = JSON.parse(notEmailedResolutionIds) as string[]
+  }
+
+  return ids
 }
