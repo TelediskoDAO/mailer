@@ -15,13 +15,8 @@ type ResolutionData = {
   createTimestamp: string
 }
 
-type ResolutionArray = {
-  resolutions: ResolutionData[]
-}
-
-type GraphResponse = {
-  data: ResolutionArray
-}
+type GraphResponse = Record<'data', Record<'resolutions', ResolutionData[]>>
+type GraphResponseError = Record<'errors', any[]>
 
 async function fetchFromGraphql(query: string) {
   const response = await fetch(SUBGRAPH_API, {
@@ -34,36 +29,47 @@ async function fetchFromGraphql(query: string) {
   return response
 }
 
+async function handleError(message: string, event: FetchEvent) {
+  console.error(message)
+  event.waitUntil(
+    MAIN_NAMESPACE.put(GRAPH_ERROR_TIMESTAMP_KEY, Date.now().toString()),
+  )
+}
+
 export async function fetchLatestResolutionIds(
   event: FetchEvent,
 ): Promise<ResolutionData[]> {
-  var lastCreateTimestamp = await MAIN_NAMESPACE.get(LAST_CREATE_TIMESTAMP_KEY)
-  lastCreateTimestamp = lastCreateTimestamp ? lastCreateTimestamp : '0'
+  const lastCreateTimestamp =
+    (await MAIN_NAMESPACE.get(LAST_CREATE_TIMESTAMP_KEY)) || '0'
 
   const response = await fetchFromGraphql(
     RESOLUTIONS_QUERY(lastCreateTimestamp),
   )
-  var jsonBody
-  if (response.status === 200) {
-    jsonBody = await response.json()
+
+  if (response.status !== 200) {
+    await handleError(await response.text(), event)
+    return []
   }
 
   try {
-    const body = jsonBody as GraphResponse
-    event.waitUntil(MAIN_NAMESPACE.put(GRAPH_ERROR_TIMESTAMP_KEY, ''))
-    const resolutions = body.data.resolutions
+    const jsonBody = await response.json()
+    const body = jsonBody as GraphResponse | GraphResponseError
 
-    if (resolutions.length > 0) {
-      const lastId = resolutions[resolutions.length - 1].createTimestamp
-      event.waitUntil(MAIN_NAMESPACE.put(LAST_CREATE_TIMESTAMP_KEY, lastId))
+    if ('data' in body) {
+      const resolutions = body.data.resolutions
+      event.waitUntil(MAIN_NAMESPACE.put(GRAPH_ERROR_TIMESTAMP_KEY, ''))
+
+      if (resolutions.length > 0) {
+        const { createTimestamp: lastId } = resolutions[resolutions.length - 1]
+        event.waitUntil(MAIN_NAMESPACE.put(LAST_CREATE_TIMESTAMP_KEY, lastId))
+      }
+
+      return resolutions
     }
 
-    return resolutions
-  } catch {
-    console.error(jsonBody)
-    event.waitUntil(
-      MAIN_NAMESPACE.put(GRAPH_ERROR_TIMESTAMP_KEY, Date.now().toString()),
-    )
+    throw new Error(JSON.stringify(jsonBody))
+  } catch (e) {
+    await handleError((e as Error).message, event)
     return []
   }
 }
