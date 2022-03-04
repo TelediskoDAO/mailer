@@ -30,14 +30,19 @@ export async function sendEmails(
   const failedIds: string[] = []
   await Promise.all(
     ids.map(async (resolutionId) => {
-      const response = await sendEmail(resolutionId, accessToken)
-      if (response.status != 200) {
+      try {
+        const response = await sendEmail(resolutionId, accessToken)
+        if (response.status != 200) {
+          failedIds!.push(resolutionId)
+          console.error(await response.text())
+        } else {
+          console.log(
+            `Email ${resolutionId} sent. Response: ${await response.text()}`,
+          )
+        }
+      } catch (e) {
         failedIds!.push(resolutionId)
-        console.error(await response.text())
-      } else {
-        console.log(
-          `Email ${resolutionId} sent. Response: ${await response.text()}`,
-        )
+        console.error(e)
       }
     }),
   )

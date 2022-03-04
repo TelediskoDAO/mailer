@@ -42,16 +42,14 @@ export async function fetchLatestResolutionIds(
   const lastCreateTimestamp =
     (await MAIN_NAMESPACE.get(LAST_CREATE_TIMESTAMP_KEY)) || '0'
 
-  const response = await fetchFromGraphql(
-    RESOLUTIONS_QUERY(lastCreateTimestamp),
-  )
-
-  if (response.status !== 200) {
-    await handleError(await response.text(), event)
-    return []
-  }
-
   try {
+    const response = await fetchFromGraphql(
+      RESOLUTIONS_QUERY(lastCreateTimestamp),
+    )
+    if (response.status !== 200) {
+      throw new Error(await response.text())
+    }
+
     const jsonBody = await response.json()
     const body = jsonBody as GraphResponse | GraphResponseError
 
