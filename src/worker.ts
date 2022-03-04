@@ -57,7 +57,7 @@ router.get('/health/auth', async (request: Request, event: FetchEvent) => {
   }
 })
 
-router.get('/health/graph', async (request: Request, event: FetchEvent) => {
+router.get('/health/mail', async (request: Request, event: FetchEvent) => {
   const graphErrorTimestamp = await getGraphErrorTimestamp()
   if (graphErrorTimestamp == '') {
     return new Response('OK')
