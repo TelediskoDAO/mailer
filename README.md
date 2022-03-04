@@ -1,39 +1,80 @@
-# ʕ •́؈•̀) `worker-typescript-template`
+# Pre-Draft Mailer
 
-A batteries included template for kick starting a TypeScript Cloudflare worker project.
+A cloudflare workers that sends an email to the Teledisko Founders every time there is a new resolution pre-draft created on chain.
+This way they can have a look and either update, approve or reject them.
+
+## Components
+
+* [Cloudflare worker](https://workers.cloudflare.com/)
+* [Zoho Email APIs](https://api-console.zoho.com/)
+* [The Graph](https://thegraph.com/hosted-service/subgraph/telediskodao/resolution)
+* [Uptime Robot](https://uptimerobot.com)
+
+### Overall architecture
+The cloudflare worker orchestrates the logic of the mailer. More in details:
+
+* It checks whether there are new resolutions on The Graph
+* If so, authenticates to Zoho and and sends out an email per each new resolution
+
+It is run every 5 minutes from a Scheduled Trigger inside Cloudflare.
+
+In case of failures on any of these steps, the worker will anyway shut down successfully, but it will store the outcome of its operations in the KV.
+There are then 3 endpoints in charge of returning the status of each of the external dependencies based on these KV values:
+
+* `/health/email`: returns 500 when 1 or more emails have not been sent due to errors
+* `/health/graph`: returns 500 when the last time the worker ran, the response from The Graph was erroneous
+* `/health/auth`: returns 500 when the last the worker tried to authenticate to Zoho, no access token was returned
+
+Whenever any of these endpoints turn red, an email will be sent by the Uptime Robot to the maintainer emails.
+
+### Troubleshooting
+
+Whenever an alert comes, check which endpoint failed. This will tell which of the dependencies caused the issue.
+Possible problems:
+* Connection to any of the dependencies fail: this will result in a 500 or connection time out error. Check the logs for more details.
+* The Graph returns an error: make sure a recent subgraph deployment did no break the query interface and the endpoint.
+* Email returns an error: some emails were not sent. Check the logs for more details. If it's a temporary error, the failed emails will be sent during the next run, so you can try to wait half an hour and if the error is not gone, investigate further.
+* Auth: the access token request to Zoho failed. This usually requires to re-execute the Oauth sequence manually to get a new refresh token. Example:
+```
+curl "https://accounts.zoho.com/oauth/v2/token" -XPOST -d "client_id=<client id>&client_secret=<client secret>&code=<temporary code>&grant_type=authorization_code" -H 'Content-Type: application/x-www-form-urlencoded'
+
+# Take authorization code refresh code from the response and update refresh token in secrets
+wrangler secret put ZOHO_REFRESH_TOKEN
+
+# Then input the new refresh token
+```
+
+You can find these information (client id, client secret and temporary code) at https://api-console.zoho.com/, in the Self Client section.
+#### How to check the logs
+* Login to https://workers.cloudflare.com/
+* Go to the worker page
+![Alt text](docs/overview.png?raw=true "Title")
+* Click "Begin Log Stream"
+* Trigger the worker by visiting its URL
+* Check the errors
+
+Alternatively to the first 3 steps, you can simply locally run
+```
+wrangler tail
+```
 
 ## Note: You must use [wrangler](https://developers.cloudflare.com/workers/cli-wrangler/install-update) 1.17 or newer to use this template.
 
-## 🔋 Getting Started
+# Development
 
-This template is meant to be used with [Wrangler](https://github.com/cloudflare/wrangler). If you are not already familiar with the tool, we recommend that you install the tool and configure it to work with your [Cloudflare account](https://dash.cloudflare.com). Documentation can be found [here](https://developers.cloudflare.com/workers/tooling/wrangler/).
-
-To generate using Wrangler, run this command:
-
-```bash
-wrangler generate my-ts-project https://github.com/cloudflare/worker-typescript-template
+## Local
+Start a local dev server with `minflare`
+```
+npx miniflare --watch --debug --kv MAIN_NAMESPACE
 ```
 
-### 👩 💻 Developing
+You need an environment named `.env.test` with a minimum set of variable defined in order to start. Check the `.env.test.sample` for more details.
 
-[`src/index.ts`](./src/index.ts) calls the request handler in [`src/handler.ts`](./src/handler.ts), and will return the [request method](https://developer.mozilla.org/en-US/docs/Web/API/Request/method) for the given request.
+You should then be able to invoke the worker on localhost at the address that miniflare will output.
 
-### 🧪 Testing
+## Deploy
 
-This template comes with jest tests which simply test that the request handler can handle each request method. `npm test` will run your tests.
+```
+wrangler publish
+```
 
-### ✏️ Formatting
-
-This template uses [`prettier`](https://prettier.io/) to format the project. To invoke, run `npm run format`.
-
-### 👀 Previewing and Publishing
-
-For information on how to preview and publish your worker, please see the [Wrangler docs](https://developers.cloudflare.com/workers/tooling/wrangler/commands/#publish).
-
-## 🤢 Issues
-
-If you run into issues with this specific project, please feel free to file an issue [here](https://github.com/cloudflare/worker-typescript-template/issues). If the problem is with Wrangler, please file an issue [here](https://github.com/cloudflare/wrangler/issues).
-
-## ⚠️ Caveats
-
-The `service-worker-mock` used by the tests is not a perfect representation of the Cloudflare Workers runtime. It is a general approximation. We recommend that you test end to end with `wrangler dev` in addition to a [staging environment](https://developers.cloudflare.com/workers/tooling/wrangler/configuration/environments/) to test things before deploying.
