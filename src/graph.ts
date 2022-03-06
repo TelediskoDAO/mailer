@@ -29,7 +29,10 @@ async function fetchFromGraphql(query: string) {
   return response
 }
 
-async function handleError(message: string, event: FetchEvent) {
+async function handleError(
+  message: string,
+  event: FetchEvent | ScheduledEvent,
+) {
   console.error(message)
   event.waitUntil(
     MAIN_NAMESPACE.put(GRAPH_ERROR_TIMESTAMP_KEY, Date.now().toString()),
@@ -37,7 +40,7 @@ async function handleError(message: string, event: FetchEvent) {
 }
 
 export async function fetchLatestResolutionIds(
-  event: FetchEvent,
+  event: FetchEvent | ScheduledEvent,
 ): Promise<ResolutionData[]> {
   const lastCreateTimestamp =
     (await MAIN_NAMESPACE.get(LAST_CREATE_TIMESTAMP_KEY)) || '0'

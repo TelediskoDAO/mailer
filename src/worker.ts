@@ -3,7 +3,7 @@ import { sendEmails, getFailedEmailResolutioIds } from './email'
 import { fetchAccessToken, getAuthErrorTimestamp } from './auth'
 import { fetchLatestResolutionIds, getGraphErrorTimestamp } from './graph'
 
-async function handleRoot(event: FetchEvent) {
+async function handleRoot(event: FetchEvent | ScheduledEvent) {
   const accessToken = await fetchAccessToken(event)
 
   if (accessToken !== undefined) {
@@ -70,4 +70,8 @@ async function handle(event: FetchEvent) {
 
 addEventListener('fetch', (event) => {
   event.respondWith(handle(event))
+})
+
+addEventListener('scheduled', (event) => {
+  event.waitUntil(handleRoot(event))
 })

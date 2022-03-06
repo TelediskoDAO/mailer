@@ -25,7 +25,7 @@ export async function sendEmail(resolutionId: string, accessToken: string) {
 export async function sendEmails(
   ids: string[],
   accessToken: string,
-  event: FetchEvent,
+  event: FetchEvent | ScheduledEvent,
 ) {
   const failedIds: string[] = []
   await Promise.all(

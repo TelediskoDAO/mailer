@@ -1,7 +1,7 @@
 const AUTH_ERROR_TIMESTAMP_KEY = 'authErrorTimestamp'
 
 export async function fetchAccessToken(
-  event: FetchEvent,
+  event: FetchEvent | ScheduledEvent,
 ): Promise<string | undefined> {
   try {
     const authTokenResponse = await fetch(ZOHO_API_AUTH, {
