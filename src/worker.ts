@@ -41,22 +41,25 @@ async function handleApprovedResolutions(event: FetchEvent | ScheduledEvent) {
       (r) => r.id,
     )
     const previousFailedIds = await getFailedVotingEmailResolutionIds()
-    const ethToEmails: any = await fetchOdooUsers(event)
+    const totalResolutions = previousFailedIds.concat(newResolutions)
+    if (totalResolutions.length > 0) {
+      const ethToEmails: any = await fetchOdooUsers(event)
 
-    if (Object.keys(ethToEmails).length > 0) {
-      const resolutionVotersMap: any = {}
-      await Promise.all(
-        previousFailedIds.concat(newResolutions).map(async (resolution) => {
-          const voters = await fetchVoters(event, resolution)
-          const emails = voters
-            .map((voter) => ethToEmails[voter.address.toLowerCase()])
-            .filter((email) => email)
+      if (Object.keys(ethToEmails).length > 0) {
+        const resolutionVotersMap: any = {}
+        await Promise.all(
+          totalResolutions.map(async (resolution) => {
+            const voters = await fetchVoters(event, resolution)
+            const emails = voters
+              .map((voter) => ethToEmails[voter.address.toLowerCase()])
+              .filter((email) => email)
 
-          resolutionVotersMap[resolution] = emails
-        }),
-      )
+            resolutionVotersMap[resolution] = emails
+          }),
+        )
 
-      await sendVotingEmails(resolutionVotersMap, accessToken, event)
+        await sendVotingEmails(resolutionVotersMap, accessToken, event)
+      }
     }
   }
 
