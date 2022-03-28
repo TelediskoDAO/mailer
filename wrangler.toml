@@ -21,6 +21,7 @@ SUBGRAPH_API = "https://api.thegraph.com/subgraphs/name/telediskodao/resolution"
 EMAIL_FROM = "test@teledisko.com"
 EMAIL_TO = "miotto@posteo.de"
 EMAIL_CC = "alberto@granzotto.net,stefano.ceschib@gmail.com"
+ODOO_API = "https://odoo.teledisko.com/jsonrpc"
 
 [secrets]
 # ZOHO_CLIENT_ID
