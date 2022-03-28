@@ -1,7 +1,6 @@
 const GRAPH_ERROR_TIMESTAMP_KEY = 'graphErrorTimestamp'
 const LAST_CREATE_TIMESTAMP_KEY = 'lastCreateTimestamp'
 const LAST_APPROVED_TIMESTAMP_KEY = 'lastApprovedTimestamp'
-const NO_VOTERS_ERROR_TIMESTAMP_KEY = 'noVotersErrorTimestamp'
 
 const RESOLUTIONS_QUERY = (timestamp: string) => `
   query GetResolutions {
@@ -151,28 +150,11 @@ export async function fetchVoters(
 
   const voters = data.resolution.voters
 
-  if (voters.length == 0) {
-    event.waitUntil(
-      MAIN_NAMESPACE.put(NO_VOTERS_ERROR_TIMESTAMP_KEY, Date.now().toString()),
-    )
-  } else {
-    event.waitUntil(MAIN_NAMESPACE.put(NO_VOTERS_ERROR_TIMESTAMP_KEY, ''))
-  }
-
   return voters
 }
 
 export async function getGraphErrorTimestamp(): Promise<string | null> {
   const value = await MAIN_NAMESPACE.get(GRAPH_ERROR_TIMESTAMP_KEY)
-  if (value == '') {
-    return null
-  }
-
-  return value
-}
-
-export async function getVotersErrorTimestamp(): Promise<string | null> {
-  const value = await MAIN_NAMESPACE.get(NO_VOTERS_ERROR_TIMESTAMP_KEY)
   if (value == '') {
     return null
   }

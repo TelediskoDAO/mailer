@@ -9,12 +9,20 @@ This way they can have a look and either update, approve or reject them.
 * [Zoho Email APIs](https://api-console.zoho.com/)
 * [The Graph](https://thegraph.com/hosted-service/subgraph/telediskodao/resolution)
 * [Uptime Robot](https://uptimerobot.com)
+* Odoo APIs
 
 ### Overall architecture
 The cloudflare worker orchestrates the logic of the mailer. More in details:
 
+*Use case: new pre-draft resolution*
 * It checks whether there are new resolutions on The Graph
 * If so, authenticates to Zoho and and sends out an email per each new resolution
+
+*Use case: new approved resolution*
+* It checks whether there are resolutions that have recently been approved on The Graph
+* If so:
+    * authenticates odoo and fetches all Teledisko user information (ETH address and email)
+    * authenticates to Zoho and and sends out an email per each resolution to all those that are eligible voters for the resolution
 
 It is run every 5 minutes from a Scheduled Trigger inside Cloudflare.
 
@@ -23,6 +31,7 @@ There are then 3 endpoints in charge of returning the status of each of the exte
 
 * `/health/email`: returns 500 when 1 or more emails have not been sent due to errors
 * `/health/graph`: returns 500 when the last time the worker ran, the response from The Graph was erroneous
+* `/health/odoo`: returns 500 when the last time the worker ran, Odoo returned and error, either during login or during user retrieval
 * `/health/auth`: returns 500 when the last the worker tried to authenticate to Zoho, no access token was returned
 
 Whenever any of these endpoints turn red, an email will be sent by the Uptime Robot to the maintainer emails.
@@ -33,6 +42,7 @@ Whenever an alert comes, check which endpoint failed. This will tell which of th
 Possible problems:
 * Connection to any of the dependencies fail: this will result in a 500 or connection time out error. Check the logs for more details.
 * The Graph returns an error: make sure a recent subgraph deployment did no break the query interface and the endpoint.
+* Odoo returns an error: either the login information are not valid anymore (you should then update the secrets `ODOO_USERNAME` and `ODOO_PASSWORD`), or Odoo is not able to return the list of users. Logs will reveal more detailes.
 * Email returns an error: some emails were not sent. Check the logs for more details. If it's a temporary error, the failed emails will be sent during the next run, so you can try to wait half an hour and if the error is not gone, investigate further.
 * Auth: the access token request to Zoho failed. This usually requires to re-execute the Oauth sequence manually to get a new refresh token. Example:
 ```

@@ -10,10 +10,9 @@ import {
   fetchLastCreatedResolutionIds,
   fetchLastApprovedResolutionIds,
   getGraphErrorTimestamp,
-  getVotersErrorTimestamp,
   fetchVoters,
 } from './graph'
-import { fetchOdooUsers } from './odoo'
+import { fetchOdooUsers, getOdooErrorTimestamp } from './odoo'
 
 async function handleCreatedResolutions(event: FetchEvent | ScheduledEvent) {
   const accessToken = await fetchAccessToken(event)
@@ -42,7 +41,7 @@ async function handleApprovedResolutions(event: FetchEvent | ScheduledEvent) {
       (r) => r.id,
     )
     const previousFailedIds = await getFailedVotingEmailResolutionIds()
-    const ethToEmails: any = await fetchOdooUsers()
+    const ethToEmails: any = await fetchOdooUsers(event)
 
     if (Object.keys(ethToEmails).length > 0) {
       const resolutionVotersMap: any = {}
@@ -80,13 +79,13 @@ async function handleEmail() {
   }
 }
 
-async function handleVoters() {
-  const graphVotersErrorTimestamp = await getVotersErrorTimestamp()
+async function handleOdoo() {
+  const graphVotersErrorTimestamp = await getOdooErrorTimestamp()
   if (graphVotersErrorTimestamp === null) {
     return new Response('OK')
   } else {
     return new Response(
-      "Can't fetch voters from graph. Check logs for details.",
+      "Can't communicate with Odoo. Either login or user fetching are broken. Check the logs for more details.",
       {
         status: 500,
       },
@@ -144,8 +143,8 @@ async function handle(event: FetchEvent) {
     return await handleGraph()
   }
 
-  if (event.request.url.includes('/health/voters')) {
-    return await handleVoters()
+  if (event.request.url.includes('/health/odoo')) {
+    return await handleOdoo()
   }
 
   return new Response('Non existing route', { status: 404 })
