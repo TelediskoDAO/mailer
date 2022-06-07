@@ -34,6 +34,7 @@ async function handleCreatedResolutions(event: FetchEvent | ScheduledEvent) {
 async function handleApprovedResolutions(event: FetchEvent | ScheduledEvent) {
   // Login
   // Login with user name, then with UID e password
+
   const accessToken = await fetchAccessToken(event)
 
   if (accessToken !== undefined) {
