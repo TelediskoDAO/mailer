@@ -32,3 +32,5 @@ ODOO_API = "https://odoo.teledisko.com/jsonrpc"
 env_path = ".env.test"             # --env
 kv_persist = false                  # --kv-persist
 cache_persist = "./cache"          # --cache-persist
+host = "127.0.0.1"                 # --host
+port = 1337                        # --port

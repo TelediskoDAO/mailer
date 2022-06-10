@@ -2,6 +2,7 @@
 import {
   sendApprovalEmails,
   sendVotingEmails,
+  sendNewOffersEmails,
   getFailedApprovalEmailResolutionIds,
   getFailedVotingEmailResolutionIds,
 } from './email'
@@ -11,6 +12,8 @@ import {
   fetchLastApprovedResolutionIds,
   getGraphErrorTimestamp,
   fetchVoters,
+  fetchNewOffers,
+  fetchContributors,
 } from './graph'
 import { fetchOdooUsers, getOdooErrorTimestamp } from './odoo'
 
@@ -64,6 +67,27 @@ async function handleApprovedResolutions(event: FetchEvent | ScheduledEvent) {
     }
   }
 
+  return new Response('OK')
+}
+
+async function handleNewOffers(event: FetchEvent | ScheduledEvent) {
+  // Login
+  // Login with user name, then with UID e password
+
+  const accessToken = await fetchAccessToken(event)
+
+  if (accessToken !== undefined) {
+    const offers = await fetchNewOffers(event)
+    if (offers.length > 0) {
+      const ethToEmails: any = await fetchOdooUsers(event)
+      const contributors = await fetchContributors(event)
+      const emails = contributors
+        .map((contributor) => ethToEmails[contributor.address.toLowerCase()])
+        .filter((email) => email)
+
+      await sendNewOffersEmails(emails, accessToken, event)
+    }
+  }
   return new Response('OK')
 }
 
@@ -122,6 +146,7 @@ async function handleAuth() {
 async function handleEmails(event: ScheduledEvent) {
   await handleCreatedResolutions(event)
   await handleApprovedResolutions(event)
+  await handleNewOffers(event)
 
   return new Response('OK')
 }
@@ -133,6 +158,10 @@ async function handle(event: FetchEvent) {
 
   if (event.request.url.includes('/mails/approved')) {
     return await handleApprovedResolutions(event)
+  }
+
+  if (event.request.url.includes('/mails/offers')) {
+    return await handleNewOffers(event)
   }
 
   if (event.request.url.includes('/health/auth')) {

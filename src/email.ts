@@ -41,6 +41,21 @@ async function sendResolutionApprovalEmail(
   )
 }
 
+async function sendNewOffersEmail(accessToken: string, contributors: string[]) {
+  if (contributors.length == 0) {
+    throw new Error(`No recipients.`)
+  }
+
+  const body = `Dear Contributor, new TelediskoToken offers has been made. Check them out at https://dao-staging.teledisko.com/#/tokens .`
+  return await sendEmail(
+    accessToken,
+    EMAIL_TO,
+    contributors.join(','),
+    'New Offers',
+    body,
+  )
+}
+
 async function sendResolutionVotingEmail(
   resolutionId: string,
   accessToken: string,
@@ -111,6 +126,14 @@ export async function sendApprovalEmails(
   )
 
   return failedIds
+}
+
+export async function sendNewOffersEmails(
+  contributors: string[],
+  accessToken: string,
+  event: FetchEvent | ScheduledEvent,
+) {
+  await sendNewOffersEmail(accessToken, contributors)
 }
 
 export async function sendVotingEmails(

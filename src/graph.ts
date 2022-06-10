@@ -1,6 +1,7 @@
 const GRAPH_ERROR_TIMESTAMP_KEY = 'graphErrorTimestamp'
 const LAST_CREATE_TIMESTAMP_KEY = 'lastCreateTimestamp'
 const LAST_APPROVED_TIMESTAMP_KEY = 'lastApprovedTimestamp'
+const LAST_FETCHED_OFFER_TIMESTAMP_KEY = 'lastFetchedOfferTimestamp'
 
 const RESOLUTIONS_QUERY = (timestamp: string) => `
   query GetResolutions {
@@ -20,12 +21,31 @@ const APPROVED_RESOLUTIONS_QUERY = (timestamp: string) => `
   }
 `
 
+const NEW_OFFERS_QUERY = (timestamp: string) => `
+  query GetNewOffers {
+    offers(orderBy: createTimestamp, orderDirection: asc, where: {createTimestamp_gt: ${timestamp}}) {
+      id
+      from
+      amount
+      createTimestamp
+    }
+  }
+`
+
 const VOTERS_QUERY = (resolutionId: string) => `
   query GetVoters {
     resolution(id: ${resolutionId}) {
       voters {
         address
       }
+    }
+  }
+`
+
+const CONTRIBUTORS_QUERY = () => `
+  query GetContributors {
+    daoUsers {
+      address
     }
   }
 `
@@ -40,16 +60,31 @@ type ApprovedResolutionData = {
   approveTimestamp: string
 }
 
-type VoterData = {
+type ContributorData = {
   address: string
 }
+
+type OfferData = {
+  id: string
+  from: string
+  amount: string
+  createTimestamp: string
+}
+
+type GraphOffers = Record<'offers', OfferData[]>
 
 type GraphResolutions = Record<
   'resolutions',
   ResolutionData[] | ApprovedResolutionData[]
 >
-type GraphVoters = Record<'resolution', Record<'voters', VoterData[]>>
-type GraphData = GraphVoters | GraphResolutions
+
+type GraphVoters = Record<'resolution', Record<'voters', ContributorData[]>>
+type GraphContributors = Record<'daoUsers', ContributorData[]>
+type GraphData =
+  | GraphVoters
+  | GraphResolutions
+  | GraphOffers
+  | GraphContributors
 
 type GraphResponse = Record<'data', GraphData>
 type GraphResponseError = Record<'errors', any[]>
@@ -142,7 +177,7 @@ export async function fetchLastApprovedResolutionIds(
 export async function fetchVoters(
   event: FetchEvent | ScheduledEvent,
   resolutionId: string,
-): Promise<VoterData[]> {
+): Promise<ContributorData[]> {
   const data = (await fetchData(
     event,
     VOTERS_QUERY(resolutionId),
@@ -151,6 +186,39 @@ export async function fetchVoters(
   const voters = data.resolution.voters
 
   return voters
+}
+
+export async function fetchContributors(
+  event: FetchEvent | ScheduledEvent,
+): Promise<ContributorData[]> {
+  const data = (await fetchData(
+    event,
+    CONTRIBUTORS_QUERY(),
+  )) as GraphContributors
+
+  return data.daoUsers
+}
+
+export async function fetchNewOffers(
+  event: FetchEvent | ScheduledEvent,
+): Promise<OfferData[]> {
+  const lastFetchedOfferTimestamp =
+    (await MAIN_NAMESPACE.get(LAST_FETCHED_OFFER_TIMESTAMP_KEY)) || '0'
+
+  const data = (await fetchData(
+    event,
+    NEW_OFFERS_QUERY(lastFetchedOfferTimestamp),
+  )) as GraphOffers
+
+  const offers = data.offers as OfferData[]
+  if (offers.length > 0) {
+    const { createTimestamp: lastTimestamp } = offers[offers.length - 1]
+    event.waitUntil(
+      MAIN_NAMESPACE.put(LAST_FETCHED_OFFER_TIMESTAMP_KEY, lastTimestamp),
+    )
+  }
+
+  return offers
 }
 
 export async function getGraphErrorTimestamp(): Promise<string | null> {
