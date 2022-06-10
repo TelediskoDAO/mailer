@@ -27,11 +27,32 @@ async function sendEmail(
   })
 }
 
+const bodyTemplate1 = `<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+</head>
+<body style="font-family:'Courier New'">`
+
+const bodyTemplate2 = `<br/>
+Cheers,<br/>
+The Oracle
+<br/>
+<br/>
+<img src="https://static.wixstatic.com/media/24c98e_b8ee544aed6f4f9c8956b4683c38f677~mv2.jpg/v1/fill/w_630,h_196,al_c,q_80,usm_0.66_1.00_0.01,enc_auto/TelediskoColor1Glow.jpg" width="160" height="50" border="0">
+</body>
+</html>`
+
+function buildEmailPage(content: string) {
+  return `${bodyTemplate1}${content}${bodyTemplate2}`
+}
+
 async function sendResolutionApprovalEmail(
   resolutionId: string,
   accessToken: string,
 ) {
-  const body = `Hi Benjamin, new pre-draft resolution created. Would you mind reviewing it at https://dao.teledisko.com/#resolutions/${resolutionId}/edit .`
+  const body = buildEmailPage(
+    `<p>Dear Board Member,</p><p>a new pre-draft resolution has been created.<br/>Would you mind <h href="https://dao.teledisko.com/#resolutions/${resolutionId}/edit" reviewing it?</p>`,
+  )
   return await sendEmail(
     accessToken,
     EMAIL_TO,
@@ -46,7 +67,11 @@ async function sendNewOffersEmail(accessToken: string, contributors: string[]) {
     throw new Error(`No recipients.`)
   }
 
-  const body = `Dear Contributor, new TelediskoToken offers has been made. Check them out at https://dao-staging.teledisko.com/#/tokens .`
+  const body = buildEmailPage(`<p>Dear Contributor,</p> 
+      <p>new TelediskoTokens have been offered internally.<br/>
+      If you are interested in an exchange, please check them out <a href="https://dao-staging.teledisko.com/#/tokens">in the token page</a> .
+      </p>`)
+
   return await sendEmail(
     accessToken,
     EMAIL_TO,
@@ -65,7 +90,9 @@ async function sendResolutionVotingEmail(
     throw new Error(`Resolution ${resolutionId} has no recipients.`)
   }
 
-  const body = `Dear Contributor, a new resolution has been approved. Please provide your vote as soon as the voting starts. More details at: https://dao.teledisko.com/#resolutions/${resolutionId} .`
+  const body = buildEmailPage(
+    `<p>Dear Contributor,</p><p>a new resolution has been approved.<br/>Please provide your vote as soon as the poll opens.<br>You can find more details <a href="https://dao.teledisko.com/#resolutions/${resolutionId}">on the resolution page</a></p> .`,
+  )
   return await sendEmail(
     accessToken,
     EMAIL_TO,
