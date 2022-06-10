@@ -4,7 +4,7 @@ import {
   sendVotingEmails,
   sendNewOffersEmails,
   getFailedApprovalEmailResolutionIds,
-  getFailedVotingEmailResolutionIds,
+  getFailedVotingEmailResolutions,
 } from './email'
 import { fetchAccessToken, getAuthErrorTimestamp } from './auth'
 import {
@@ -42,9 +42,14 @@ async function handleApprovedResolutions(event: FetchEvent | ScheduledEvent) {
 
   if (accessToken !== undefined) {
     const newResolutions = (await fetchLastApprovedResolutionIds(event)).map(
-      (r) => r.id,
+      (r) => ({
+        id: r.id,
+        votingStarts:
+          parseInt(r.approveTimestamp) +
+          parseInt(r.resolutionType.noticePeriod),
+      }),
     )
-    const previousFailedIds = await getFailedVotingEmailResolutionIds()
+    const previousFailedIds = await getFailedVotingEmailResolutions()
     const totalResolutions = previousFailedIds.concat(newResolutions)
     if (totalResolutions.length > 0) {
       const ethToEmails: any = await fetchOdooUsers(event)
@@ -53,16 +58,21 @@ async function handleApprovedResolutions(event: FetchEvent | ScheduledEvent) {
         const resolutionVotersMap: any = {}
         await Promise.all(
           totalResolutions.map(async (resolution) => {
-            const voters = await fetchVoters(event, resolution)
+            const voters = await fetchVoters(event, resolution.id)
             const emails = voters
               .map((voter) => ethToEmails[voter.address.toLowerCase()])
               .filter((email) => email)
 
-            resolutionVotersMap[resolution] = emails
+            resolutionVotersMap[resolution.id] = emails
           }),
         )
 
-        await sendVotingEmails(resolutionVotersMap, accessToken, event)
+        await sendVotingEmails(
+          resolutionVotersMap,
+          totalResolutions,
+          accessToken,
+          event,
+        )
       }
     }
   }
@@ -94,7 +104,7 @@ async function handleNewOffers(event: FetchEvent | ScheduledEvent) {
 async function handleEmail() {
   const notEmailedResolutionIds = (
     await getFailedApprovalEmailResolutionIds()
-  ).concat(await getFailedVotingEmailResolutionIds())
+  ).concat((await getFailedVotingEmailResolutions()).map((r) => r.id))
   if (notEmailedResolutionIds.length === 0) {
     return new Response('OK')
   } else {

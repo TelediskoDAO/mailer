@@ -16,7 +16,11 @@ const APPROVED_RESOLUTIONS_QUERY = (timestamp: string) => `
   query GetApprovedResolutions {
     resolutions(orderBy: approveTimestamp, orderDirection: asc, where: {approveTimestamp_gt: ${timestamp}}) {
       id
-      approveTimestamp
+      approveTimestamp,
+      resolutionType {
+        noticePeriod
+        votingPeriod
+      }
     }
   }
 `
@@ -50,6 +54,11 @@ const CONTRIBUTORS_QUERY = () => `
   }
 `
 
+type ResolutionType = {
+  noticePeriod: string
+  votingPeriod: string
+}
+
 type ResolutionData = {
   id: string
   createTimestamp: string
@@ -58,6 +67,7 @@ type ResolutionData = {
 type ApprovedResolutionData = {
   id: string
   approveTimestamp: string
+  resolutionType: ResolutionType
 }
 
 type ContributorData = {

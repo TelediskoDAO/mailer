@@ -69,7 +69,7 @@ async function sendNewOffersEmail(accessToken: string, contributors: string[]) {
 
   const body = buildEmailPage(`<p>Dear Contributor,</p> 
       <p>new TelediskoTokens have been offered internally.<br/>
-      If you are interested in an exchange, please check them out <a href="https://dao-staging.teledisko.com/#/tokens">in the token page</a> .
+      If you are interested in an exchange, please check them out <a href="https://dao-staging.teledisko.com/#/tokens">in the token page.</a>
       </p>`)
 
   return await sendEmail(
@@ -85,13 +85,17 @@ async function sendResolutionVotingEmail(
   resolutionId: string,
   accessToken: string,
   voters: string[],
+  votingStarts: number,
 ) {
   if (voters.length == 0) {
     throw new Error(`Resolution ${resolutionId} has no recipients.`)
   }
 
+  let date = new Date()
+  date.setTime(votingStarts * 1000)
+  const votingStartsString = date.toUTCString()
   const body = buildEmailPage(
-    `<p>Dear Contributor,</p><p>a new resolution has been approved.<br/>Please provide your vote as soon as the poll opens.<br>You can find more details <a href="https://dao.teledisko.com/#resolutions/${resolutionId}">on the resolution page</a></p> .`,
+    `<p>Dear Contributor,</p><p>a new resolution has been approved.<br/>The polls open ${votingStartsString}. Remember to cast your vote then.<br>You can find more details <a href="https://dao.teledisko.com/#resolutions/${resolutionId}">on the resolution page</a></p> .`,
   )
   return await sendEmail(
     accessToken,
@@ -139,6 +143,21 @@ async function getFailedEmailResolutionIds(key: string) {
   return ids
 }
 
+type ResolutionData = {
+  id: string
+  votingStarts: number
+}
+
+async function getFailedEmailResolutions(key: string) {
+  const notEmailedResolutions = await MAIN_NAMESPACE.get(key)
+  var ids: ResolutionData[] = []
+  if (notEmailedResolutions != null) {
+    ids = JSON.parse(notEmailedResolutions) as ResolutionData[]
+  }
+
+  return ids
+}
+
 export async function sendApprovalEmails(
   ids: string[],
   accessToken: string,
@@ -165,6 +184,7 @@ export async function sendNewOffersEmails(
 
 export async function sendVotingEmails(
   resolutionVotersMap: any,
+  resolutions: ResolutionData[],
   accessToken: string,
   event: FetchEvent | ScheduledEvent,
 ) {
@@ -175,12 +195,17 @@ export async function sendVotingEmails(
         id,
         accessToken,
         resolutionVotersMap[id],
+        resolutions.filter((r) => r.id == id)[0].votingStarts,
       )
     },
   )
 
+  const failedResolutions = resolutions.filter((r) => failedIds.includes(r.id))
   event.waitUntil(
-    MAIN_NAMESPACE.put(FAILED_VOTIGN_EMAILS_KEY, JSON.stringify(failedIds)),
+    MAIN_NAMESPACE.put(
+      FAILED_VOTIGN_EMAILS_KEY,
+      JSON.stringify(failedResolutions),
+    ),
   )
 
   return failedIds
@@ -190,6 +215,6 @@ export async function getFailedApprovalEmailResolutionIds() {
   return getFailedEmailResolutionIds(FAILED_EMAILS_KEY)
 }
 
-export async function getFailedVotingEmailResolutionIds() {
-  return getFailedEmailResolutionIds(FAILED_VOTIGN_EMAILS_KEY)
+export async function getFailedVotingEmailResolutions() {
+  return getFailedEmailResolutions(FAILED_VOTIGN_EMAILS_KEY)
 }
