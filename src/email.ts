@@ -95,7 +95,7 @@ async function sendResolutionVotingEmail(
   date.setTime(votingStarts * 1000)
   const votingStartsString = date.toUTCString()
   const body = buildEmailPage(
-    `<p>Dear Contributor,</p><p>a new resolution has been approved.<br/>The polls open ${votingStartsString}. Remember to cast your vote then.<br>You can find more details <a href="https://dao.teledisko.com/#resolutions/${resolutionId}">on the resolution page</a></p> .`,
+    `<p>Dear Contributor,</p><p>a new resolution has been approved.<br/>The polls open ${votingStartsString}. Remember to cast your vote then.<br>You can find more details <a href="https://dao.teledisko.com/#resolutions/${resolutionId}">on the resolution page.</a></p>`,
   )
   return await sendEmail(
     accessToken,
