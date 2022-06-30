@@ -51,7 +51,7 @@ async function sendResolutionApprovalEmail(
   accessToken: string,
 ) {
   const body = buildEmailPage(
-    `<p>Dear Board Member,</p><p>a new pre-draft resolution has been created.<br/>Would you mind <h href="https://dao.teledisko.com/#resolutions/${resolutionId}/edit" reviewing it?</p>`,
+    `<p>Dear Board Member,</p><p>a new pre-draft resolution has been created.<br/>Would you mind <a href="https://dao.teledisko.com/#resolutions/${resolutionId}/edit">reviewing it?</a></p>`,
   )
   return await sendEmail(
     accessToken,
