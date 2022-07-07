@@ -3,7 +3,7 @@ const LAST_CREATE_TIMESTAMP_KEY = 'lastCreateTimestamp'
 const LAST_APPROVED_TIMESTAMP_KEY = 'lastApprovedTimestamp'
 const LAST_FETCHED_OFFER_TIMESTAMP_KEY = 'lastFetchedOfferTimestamp'
 
-const RESOLUTIONS_QUERY = (timestamp: string) => `
+const RESOLUTIONS_QUERY = (timestamp: number) => `
   query GetResolutions {
     resolutions(orderBy: createTimestamp, orderDirection: asc, where: {createTimestamp_gt: ${timestamp}}) {
       id
@@ -12,7 +12,7 @@ const RESOLUTIONS_QUERY = (timestamp: string) => `
   }
 `
 
-const APPROVED_RESOLUTIONS_QUERY = (timestamp: string) => `
+const APPROVED_RESOLUTIONS_QUERY = (timestamp: number) => `
   query GetApprovedResolutions {
     resolutions(orderBy: approveTimestamp, orderDirection: asc, where: {approveTimestamp_gt: ${timestamp}}) {
       id
@@ -25,7 +25,7 @@ const APPROVED_RESOLUTIONS_QUERY = (timestamp: string) => `
   }
 `
 
-const NEW_OFFERS_QUERY = (timestamp: string) => `
+const NEW_OFFERS_QUERY = (timestamp: number) => `
   query GetNewOffers {
     offers(orderBy: createTimestamp, orderDirection: asc, where: {createTimestamp_gt: ${timestamp}}) {
       id
@@ -55,18 +55,18 @@ const CONTRIBUTORS_QUERY = () => `
 `
 
 type ResolutionType = {
-  noticePeriod: string
-  votingPeriod: string
+  noticePeriod: number
+  votingPeriod: number
 }
 
 type ResolutionData = {
   id: string
-  createTimestamp: string
+  createTimestamp: number
 }
 
 type ApprovedResolutionData = {
   id: string
-  approveTimestamp: string
+  approveTimestamp: number
   resolutionType: ResolutionType
 }
 
@@ -77,8 +77,8 @@ type ContributorData = {
 type OfferData = {
   id: string
   from: string
-  amount: string
-  createTimestamp: string
+  amount: number
+  createTimestamp: number
 }
 
 type GraphOffers = Record<'offers', OfferData[]>
@@ -148,8 +148,9 @@ async function fetchData(
 export async function fetchLastCreatedResolutionIds(
   event: FetchEvent | ScheduledEvent,
 ): Promise<ResolutionData[]> {
-  const lastCreateTimestamp =
-    (await MAIN_NAMESPACE.get(LAST_CREATE_TIMESTAMP_KEY)) || '0'
+  let lastCreateTimestamp = parseInt(
+    (await MAIN_NAMESPACE.get(LAST_CREATE_TIMESTAMP_KEY)) || '0',
+  )
 
   const data = (await fetchData(
     event,
@@ -157,28 +158,50 @@ export async function fetchLastCreatedResolutionIds(
   )) as GraphResolutions
   const resolutions = data.resolutions as ResolutionData[]
   if (resolutions.length > 0) {
-    const { createTimestamp: lastId } = resolutions[resolutions.length - 1]
-    event.waitUntil(MAIN_NAMESPACE.put(LAST_CREATE_TIMESTAMP_KEY, lastId))
+    lastCreateTimestamp = resolutions[resolutions.length - 1].createTimestamp
+    event.waitUntil(
+      MAIN_NAMESPACE.put(
+        LAST_CREATE_TIMESTAMP_KEY,
+        lastCreateTimestamp.toString(),
+      ),
+    )
   }
 
   return resolutions
 }
 
-export async function fetchLastApprovedResolutionIds(
+export async function fetchApprovedResolutionsIds(
+  lastApprovedTimestamp: number,
   event: FetchEvent | ScheduledEvent,
 ): Promise<ApprovedResolutionData[]> {
-  const lastApprovedTimestamp =
-    (await MAIN_NAMESPACE.get(LAST_APPROVED_TIMESTAMP_KEY)) || '0'
-
   const data = (await fetchData(
     event,
     APPROVED_RESOLUTIONS_QUERY(lastApprovedTimestamp),
   )) as GraphResolutions
 
-  const resolutions = data.resolutions as ApprovedResolutionData[]
+  return data.resolutions as ApprovedResolutionData[]
+}
+
+export async function fetchLastApprovedResolutionIds(
+  event: FetchEvent | ScheduledEvent,
+): Promise<ApprovedResolutionData[]> {
+  let lastApprovedTimestamp = parseInt(
+    (await MAIN_NAMESPACE.get(LAST_APPROVED_TIMESTAMP_KEY)) || '0',
+  )
+
+  const resolutions = await fetchApprovedResolutionsIds(
+    lastApprovedTimestamp,
+    event,
+  )
+
   if (resolutions.length > 0) {
-    const { approveTimestamp: lastId } = resolutions[resolutions.length - 1]
-    event.waitUntil(MAIN_NAMESPACE.put(LAST_APPROVED_TIMESTAMP_KEY, lastId))
+    lastApprovedTimestamp = resolutions[resolutions.length - 1].approveTimestamp
+    event.waitUntil(
+      MAIN_NAMESPACE.put(
+        LAST_APPROVED_TIMESTAMP_KEY,
+        lastApprovedTimestamp.toString(),
+      ),
+    )
   }
 
   return resolutions
@@ -212,8 +235,9 @@ export async function fetchContributors(
 export async function fetchNewOffers(
   event: FetchEvent | ScheduledEvent,
 ): Promise<OfferData[]> {
-  const lastFetchedOfferTimestamp =
-    (await MAIN_NAMESPACE.get(LAST_FETCHED_OFFER_TIMESTAMP_KEY)) || '0'
+  let lastFetchedOfferTimestamp = parseInt(
+    (await MAIN_NAMESPACE.get(LAST_FETCHED_OFFER_TIMESTAMP_KEY)) || '0',
+  )
 
   const data = (await fetchData(
     event,
@@ -222,9 +246,12 @@ export async function fetchNewOffers(
 
   const offers = data.offers as OfferData[]
   if (offers.length > 0) {
-    const { createTimestamp: lastTimestamp } = offers[offers.length - 1]
+    lastFetchedOfferTimestamp = offers[offers.length - 1].createTimestamp
     event.waitUntil(
-      MAIN_NAMESPACE.put(LAST_FETCHED_OFFER_TIMESTAMP_KEY, lastTimestamp),
+      MAIN_NAMESPACE.put(
+        LAST_FETCHED_OFFER_TIMESTAMP_KEY,
+        lastFetchedOfferTimestamp.toString(),
+      ),
     )
   }
 

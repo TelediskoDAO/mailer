@@ -10,6 +10,7 @@ import { fetchAccessToken, getAuthErrorTimestamp } from './auth'
 import {
   fetchLastCreatedResolutionIds,
   fetchLastApprovedResolutionIds,
+  fetchApprovedResolutionsIds,
   getGraphErrorTimestamp,
   fetchVoters,
   fetchNewOffers,
@@ -44,9 +45,7 @@ async function handleApprovedResolutions(event: FetchEvent | ScheduledEvent) {
     const newResolutions = (await fetchLastApprovedResolutionIds(event)).map(
       (r) => ({
         id: r.id,
-        votingStarts:
-          parseInt(r.approveTimestamp) +
-          parseInt(r.resolutionType.noticePeriod),
+        votingStarts: r.approveTimestamp + r.resolutionType.noticePeriod,
       }),
     )
     const previousFailedIds = await getFailedVotingEmailResolutions()
@@ -78,6 +77,39 @@ async function handleApprovedResolutions(event: FetchEvent | ScheduledEvent) {
   }
 
   return new Response('OK')
+}
+
+async function handleVotingAlerts(event: FetchEvent | ScheduledEvent) {
+  // Get resolutions approved within the last 30 days
+  const today = new Date().getTime()
+  const todaySeconds = Math.floor(today / 1000)
+  const aMonthAgo = new Date(today - 30 * 24 * 60 * 60 * 1000).getTime()
+  const aMonthAgoSeconds = Math.floor(aMonthAgo / 1000)
+  const resolutions = await fetchApprovedResolutionsIds(aMonthAgoSeconds, event)
+  const lastVotingEmailSent = 0
+
+  // Get those whose approved_timestamp + notice_period is less than today
+  const resolutionsToAlert = resolutions
+    .filter(
+      (resolution) =>
+        resolution.approveTimestamp + resolution.resolutionType.noticePeriod <
+        todaySeconds,
+    )
+    .filter(
+      (resolution) =>
+        resolution.approveTimestamp + resolution.resolutionType.noticePeriod >
+        lastVotingEmailSent,
+    )
+
+  // and greater than the last voting email sent
+
+  // ex: Voting starts on 11th May at 12:00
+  //     Today: 11th May 13:00
+  //     Last email sent: 11th May 12:30 -> don't send
+  //     Last email sent: 11th May 11:30 -> send
+  // Get upcoming resolution voting start times
+  // Filter those that started and for which a notification was not yet sent
+  // Send notification to all contributors that can vote that resolution
 }
 
 async function handleNewOffers(event: FetchEvent | ScheduledEvent) {

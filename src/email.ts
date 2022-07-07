@@ -1,5 +1,5 @@
 const FAILED_EMAILS_KEY = 'notEmailedResolutionIds'
-const FAILED_VOTIGN_EMAILS_KEY = 'notEmailedVotingResolutionIds'
+const FAILED_VOTING_EMAILS_KEY = 'notEmailedVotingResolutionIds'
 
 async function sendEmail(
   accessToken: string,
@@ -203,7 +203,7 @@ export async function sendVotingEmails(
   const failedResolutions = resolutions.filter((r) => failedIds.includes(r.id))
   event.waitUntil(
     MAIN_NAMESPACE.put(
-      FAILED_VOTIGN_EMAILS_KEY,
+      FAILED_VOTING_EMAILS_KEY,
       JSON.stringify(failedResolutions),
     ),
   )
@@ -216,5 +216,5 @@ export async function getFailedApprovalEmailResolutionIds() {
 }
 
 export async function getFailedVotingEmailResolutions() {
-  return getFailedEmailResolutions(FAILED_VOTIGN_EMAILS_KEY)
+  return getFailedEmailResolutions(FAILED_VOTING_EMAILS_KEY)
 }
