@@ -1,5 +1,8 @@
-const FAILED_EMAILS_KEY = 'notEmailedResolutionIds'
-const FAILED_VOTING_EMAILS_KEY = 'notEmailedVotingResolutionIds'
+import { ResolutionData } from './model'
+
+const FAILED_PRE_DRAFT_KEY = 'notEmailedResolutionIds'
+const FAILED_APPROVED_RESOLUTION_EMAILS_KEY = 'notEmailedVotingResolutionIds'
+const FAILED_VOTING_START_EMAILS_KEY = 'notEmailedVotingStartResolutionIds'
 
 async function sendEmail(
   accessToken: string,
@@ -46,10 +49,7 @@ function buildEmailPage(content: string) {
   return `${bodyTemplate1}${content}${bodyTemplate2}`
 }
 
-async function sendResolutionApprovalEmail(
-  resolutionId: string,
-  accessToken: string,
-) {
+async function sendPreDraftEmail(resolutionId: string, accessToken: string) {
   const body = buildEmailPage(
     `<p>Dear Board Member,</p><p>a new pre-draft resolution has been created.<br/>Would you mind <a href="https://dao.teledisko.com/#resolutions/${resolutionId}/edit">reviewing it?</a></p>`,
   )
@@ -62,15 +62,16 @@ async function sendResolutionApprovalEmail(
   )
 }
 
-async function sendNewOffersEmail(accessToken: string, contributors: string[]) {
+async function sendToContributors(
+  accessToken: string,
+  contributors: string[],
+  content: string,
+) {
   if (contributors.length == 0) {
     throw new Error(`No recipients.`)
   }
 
-  const body = buildEmailPage(`<p>Dear Contributor,</p> 
-      <p>new TelediskoTokens have been offered internally.<br/>
-      If you are interested in an exchange, please check them out <a href="https://dao-staging.teledisko.com/#/tokens">in the token page.</a>
-      </p>`)
+  const body = buildEmailPage(content)
 
   return await sendEmail(
     accessToken,
@@ -81,29 +82,44 @@ async function sendNewOffersEmail(accessToken: string, contributors: string[]) {
   )
 }
 
-async function sendResolutionVotingEmail(
+async function sendNewOffersEmail(accessToken: string, contributors: string[]) {
+  return await sendToContributors(
+    accessToken,
+    contributors,
+    `<p>Dear Contributor,</p> 
+      <p>new TelediskoTokens have been offered internally.<br/>
+      If you are interested in an exchange, please check them out <a href="https://dao-staging.teledisko.com/#/tokens">in the token page.</a>
+      </p>`,
+  )
+}
+
+async function sendVotingStartsEmail(
+  resolutionId: string,
+  accessToken: string,
+  contributors: string[],
+) {
+  return await sendToContributors(
+    accessToken,
+    contributors,
+    `<p>Dear Contributor,</p> 
+      <p>The voting for <a href="https://dao.teledisko.com/#resolutions/${resolutionId}">the resolution #${resolutionId}</a> starts now!<br/>
+      Please case your vote before its expiration.
+      </p>`,
+  )
+}
+
+async function sendResolutionApprovedEmail(
   resolutionId: string,
   accessToken: string,
   voters: string[],
   votingStarts: number,
 ) {
-  if (voters.length == 0) {
-    throw new Error(`Resolution ${resolutionId} has no recipients.`)
-  }
-
   let date = new Date()
   date.setTime(votingStarts * 1000)
   const votingStartsString = date.toUTCString()
-  const body = buildEmailPage(
-    `<p>Dear Contributor,</p><p>a new resolution has been approved.<br/>The polls open ${votingStartsString}. Remember to cast your vote then.<br>You can find more details <a href="https://dao.teledisko.com/#resolutions/${resolutionId}">on the resolution page.</a></p>`,
-  )
-  return await sendEmail(
-    accessToken,
-    EMAIL_TO,
-    voters.join(','),
-    'New Resolution',
-    body,
-  )
+  const content = `<p>Dear Contributor,</p><p>a new resolution has been approved.<br/>The polls open ${votingStartsString}. Remember to cast your vote then.<br>You can find more details <a href="https://dao.teledisko.com/#resolutions/${resolutionId}">on the resolution page.</a></p>`
+
+  return await sendToContributors(accessToken, voters, content)
 }
 
 async function sendEmails(
@@ -133,22 +149,7 @@ async function sendEmails(
   return failedIds
 }
 
-async function getFailedEmailResolutionIds(key: string) {
-  const notEmailedResolutionIds = await MAIN_NAMESPACE.get(key)
-  var ids: string[] = []
-  if (notEmailedResolutionIds != null) {
-    ids = JSON.parse(notEmailedResolutionIds) as string[]
-  }
-
-  return ids
-}
-
-type ResolutionData = {
-  id: string
-  votingStarts: number
-}
-
-async function getFailedEmailResolutions(key: string) {
+export async function getFailedEmailResolutions(key: string) {
   const notEmailedResolutions = await MAIN_NAMESPACE.get(key)
   var ids: ResolutionData[] = []
   if (notEmailedResolutions != null) {
@@ -158,17 +159,20 @@ async function getFailedEmailResolutions(key: string) {
   return ids
 }
 
-export async function sendApprovalEmails(
-  ids: string[],
+export async function sendPreDraftEmails(
+  resolutions: ResolutionData[],
   accessToken: string,
   event: FetchEvent | ScheduledEvent,
 ) {
-  const failedIds: string[] = await sendEmails(ids, async (id: string) => {
-    return await sendResolutionApprovalEmail(id, accessToken)
-  })
+  const failedIds: string[] = await sendEmails(
+    resolutions.map((r) => r.id),
+    async (id: string) => {
+      return await sendPreDraftEmail(id, accessToken)
+    },
+  )
 
   event.waitUntil(
-    MAIN_NAMESPACE.put(FAILED_EMAILS_KEY, JSON.stringify(failedIds)),
+    MAIN_NAMESPACE.put(FAILED_PRE_DRAFT_KEY, JSON.stringify(failedIds)),
   )
 
   return failedIds
@@ -182,7 +186,7 @@ export async function sendNewOffersEmails(
   await sendNewOffersEmail(accessToken, contributors)
 }
 
-export async function sendVotingEmails(
+export async function sendResolutionApprovedEmails(
   resolutionVotersMap: any,
   resolutions: ResolutionData[],
   accessToken: string,
@@ -191,11 +195,11 @@ export async function sendVotingEmails(
   const failedIds: string[] = await sendEmails(
     Object.keys(resolutionVotersMap),
     async (id: string) => {
-      return await sendResolutionVotingEmail(
+      return await sendResolutionApprovedEmail(
         id,
         accessToken,
         resolutionVotersMap[id],
-        resolutions.filter((r) => r.id == id)[0].votingStarts,
+        resolutions.filter((r) => r.id == id)[0].votingStarts!,
       )
     },
   )
@@ -203,7 +207,7 @@ export async function sendVotingEmails(
   const failedResolutions = resolutions.filter((r) => failedIds.includes(r.id))
   event.waitUntil(
     MAIN_NAMESPACE.put(
-      FAILED_VOTING_EMAILS_KEY,
+      FAILED_APPROVED_RESOLUTION_EMAILS_KEY,
       JSON.stringify(failedResolutions),
     ),
   )
@@ -211,10 +215,42 @@ export async function sendVotingEmails(
   return failedIds
 }
 
-export async function getFailedApprovalEmailResolutionIds() {
-  return getFailedEmailResolutionIds(FAILED_EMAILS_KEY)
+export async function sendVotingStartsEmails(
+  resolutionVotersMap: any,
+  resolutions: ResolutionData[],
+  accessToken: string,
+  event: FetchEvent | ScheduledEvent,
+) {
+  const failedIds: string[] = await sendEmails(
+    Object.keys(resolutionVotersMap),
+    async (id: string) => {
+      return await sendVotingStartsEmail(
+        id,
+        accessToken,
+        resolutionVotersMap[id],
+      )
+    },
+  )
+
+  const failedResolutions = resolutions.filter((r) => failedIds.includes(r.id))
+  event.waitUntil(
+    MAIN_NAMESPACE.put(
+      FAILED_VOTING_START_EMAILS_KEY,
+      JSON.stringify(failedResolutions),
+    ),
+  )
+
+  return failedIds
 }
 
-export async function getFailedVotingEmailResolutions() {
-  return getFailedEmailResolutions(FAILED_VOTING_EMAILS_KEY)
+export async function getFailedPreDraftEmailResolution() {
+  return getFailedEmailResolutions(FAILED_PRE_DRAFT_KEY)
+}
+
+export async function getFailedApprovedEmailResolutions() {
+  return getFailedEmailResolutions(FAILED_APPROVED_RESOLUTION_EMAILS_KEY)
+}
+
+export async function getFailedVotingStartEmailResolutions() {
+  return getFailedEmailResolutions(FAILED_VOTING_START_EMAILS_KEY)
 }

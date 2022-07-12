@@ -1,14 +1,16 @@
 //import { handleRequest } from './handler'
 import {
-  sendApprovalEmails,
-  sendVotingEmails,
+  sendPreDraftEmails,
+  sendResolutionApprovedEmails,
   sendNewOffersEmails,
-  getFailedApprovalEmailResolutionIds,
-  getFailedVotingEmailResolutions,
+  getFailedPreDraftEmailResolution,
+  getFailedApprovedEmailResolutions,
+  sendVotingStartsEmails,
+  getFailedVotingStartEmailResolutions,
 } from './email'
 import { fetchAccessToken, getAuthErrorTimestamp } from './auth'
 import {
-  fetchLastCreatedResolutionIds,
+  fetchLastCreatedResolutions,
   fetchLastApprovedResolutionIds,
   fetchApprovedResolutionsIds,
   getGraphErrorTimestamp,
@@ -17,16 +19,17 @@ import {
   fetchContributors,
 } from './graph'
 import { fetchOdooUsers, getOdooErrorTimestamp } from './odoo'
+import { ResolutionData } from './model'
 
 async function handleCreatedResolutions(event: FetchEvent | ScheduledEvent) {
   const accessToken = await fetchAccessToken(event)
 
   if (accessToken !== undefined) {
-    const resolutions = await fetchLastCreatedResolutionIds(event)
+    const resolutions = await fetchLastCreatedResolutions(event)
 
-    const previousFailedIds = await getFailedApprovalEmailResolutionIds()
-    await sendApprovalEmails(
-      resolutions.map((res) => res.id).concat(previousFailedIds),
+    const previousFailedIds = await getFailedPreDraftEmailResolution()
+    await sendPreDraftEmails(
+      resolutions.concat(previousFailedIds),
       accessToken,
       event,
     )
@@ -36,19 +39,17 @@ async function handleCreatedResolutions(event: FetchEvent | ScheduledEvent) {
 }
 
 async function handleApprovedResolutions(event: FetchEvent | ScheduledEvent) {
-  // Login
-  // Login with user name, then with UID e password
-
   const accessToken = await fetchAccessToken(event)
 
   if (accessToken !== undefined) {
     const newResolutions = (await fetchLastApprovedResolutionIds(event)).map(
-      (r) => ({
-        id: r.id,
-        votingStarts: r.approveTimestamp + r.resolutionType.noticePeriod,
-      }),
+      (r) =>
+        ({
+          id: r.id,
+          votingStarts: r.approveTimestamp! + r.resolutionType!.noticePeriod,
+        } as ResolutionData),
     )
-    const previousFailedIds = await getFailedVotingEmailResolutions()
+    const previousFailedIds = await getFailedApprovedEmailResolutions()
     const totalResolutions = previousFailedIds.concat(newResolutions)
     if (totalResolutions.length > 0) {
       const ethToEmails: any = await fetchOdooUsers(event)
@@ -56,7 +57,7 @@ async function handleApprovedResolutions(event: FetchEvent | ScheduledEvent) {
       if (Object.keys(ethToEmails).length > 0) {
         const resolutionVotersMap: any = {}
         await Promise.all(
-          totalResolutions.map(async (resolution) => {
+          totalResolutions.map(async (resolution: ResolutionData) => {
             const voters = await fetchVoters(event, resolution.id)
             const emails = voters
               .map((voter) => ethToEmails[voter.address.toLowerCase()])
@@ -66,7 +67,7 @@ async function handleApprovedResolutions(event: FetchEvent | ScheduledEvent) {
           }),
         )
 
-        await sendVotingEmails(
+        await sendResolutionApprovedEmails(
           resolutionVotersMap,
           totalResolutions,
           accessToken,
@@ -79,7 +80,13 @@ async function handleApprovedResolutions(event: FetchEvent | ScheduledEvent) {
   return new Response('OK')
 }
 
-async function handleVotingAlerts(event: FetchEvent | ScheduledEvent) {
+async function handleVotingStarts(event: FetchEvent | ScheduledEvent) {
+  const accessToken = await fetchAccessToken(event)
+
+  if (accessToken === undefined) {
+    return new Response('Invalid Access Token')
+  }
+
   // Get resolutions approved within the last 30 days
   const today = new Date().getTime()
   const todaySeconds = Math.floor(today / 1000)
@@ -89,27 +96,51 @@ async function handleVotingAlerts(event: FetchEvent | ScheduledEvent) {
   const lastVotingEmailSent = 0
 
   // Get those whose approved_timestamp + notice_period is less than today
-  const resolutionsToAlert = resolutions
-    .filter(
-      (resolution) =>
-        resolution.approveTimestamp + resolution.resolutionType.noticePeriod <
-        todaySeconds,
-    )
-    .filter(
-      (resolution) =>
-        resolution.approveTimestamp + resolution.resolutionType.noticePeriod >
-        lastVotingEmailSent,
-    )
-
   // and greater than the last voting email sent
-
   // ex: Voting starts on 11th May at 12:00
   //     Today: 11th May 13:00
   //     Last email sent: 11th May 12:30 -> don't send
   //     Last email sent: 11th May 11:30 -> send
-  // Get upcoming resolution voting start times
-  // Filter those that started and for which a notification was not yet sent
+  const resolutionsToAlert = resolutions
+    .filter(
+      (resolution) =>
+        resolution.approveTimestamp! + resolution.resolutionType!.noticePeriod <
+        todaySeconds,
+    )
+    .filter(
+      (resolution) =>
+        resolution.approveTimestamp! + resolution.resolutionType!.noticePeriod >
+        lastVotingEmailSent,
+    )
   // Send notification to all contributors that can vote that resolution
+  const previousFailedIds = await getFailedVotingStartEmailResolutions()
+  const totalResolutions = previousFailedIds.concat(resolutionsToAlert)
+  if (totalResolutions.length > 0) {
+    const ethToEmails: any = await fetchOdooUsers(event)
+
+    if (Object.keys(ethToEmails).length > 0) {
+      const resolutionVotersMap: any = {}
+      await Promise.all(
+        totalResolutions.map(async (resolution: ResolutionData) => {
+          const voters = await fetchVoters(event, resolution.id)
+          const emails = voters
+            .map((voter) => ethToEmails[voter.address.toLowerCase()])
+            .filter((email) => email)
+
+          resolutionVotersMap[resolution.id] = emails
+        }),
+      )
+
+      await sendVotingStartsEmails(
+        resolutionVotersMap,
+        resolutionsToAlert,
+        accessToken,
+        event,
+      )
+    }
+  }
+
+  return new Response('OK')
 }
 
 async function handleNewOffers(event: FetchEvent | ScheduledEvent) {
@@ -133,10 +164,11 @@ async function handleNewOffers(event: FetchEvent | ScheduledEvent) {
   return new Response('OK')
 }
 
-async function handleEmail() {
-  const notEmailedResolutionIds = (
-    await getFailedApprovalEmailResolutionIds()
-  ).concat((await getFailedVotingEmailResolutions()).map((r) => r.id))
+async function handleEmailHealth() {
+  const notEmailedResolutionIds = (await getFailedPreDraftEmailResolution())
+    .concat(await getFailedApprovedEmailResolutions())
+    .concat(await getFailedVotingStartEmailResolutions())
+    .map((r) => r.id)
   if (notEmailedResolutionIds.length === 0) {
     return new Response('OK')
   } else {
@@ -149,7 +181,7 @@ async function handleEmail() {
   }
 }
 
-async function handleOdoo() {
+async function handleOdooHealth() {
   const graphVotersErrorTimestamp = await getOdooErrorTimestamp()
   if (graphVotersErrorTimestamp === null) {
     return new Response('OK')
@@ -163,7 +195,7 @@ async function handleOdoo() {
   }
 }
 
-async function handleGraph() {
+async function handleGraphHealth() {
   const graphErrorTimestamp = await getGraphErrorTimestamp()
   if (graphErrorTimestamp === null) {
     return new Response('OK')
@@ -211,15 +243,15 @@ async function handle(event: FetchEvent) {
   }
 
   if (event.request.url.includes('/health/email')) {
-    return await handleEmail()
+    return await handleEmailHealth()
   }
 
   if (event.request.url.includes('/health/graph')) {
-    return await handleGraph()
+    return await handleGraphHealth()
   }
 
   if (event.request.url.includes('/health/odoo')) {
-    return await handleOdoo()
+    return await handleOdooHealth()
   }
 
   return new Response('Non existing route', { status: 404 })
