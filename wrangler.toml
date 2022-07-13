@@ -17,7 +17,7 @@ format = "service-worker"
 [vars]
 ZOHO_API_MAIL = "https://mail.zoho.com/api/accounts/6077046000000008002/messages"
 ZOHO_API_AUTH = "https://accounts.zoho.com/oauth/v2/token"
-SUBGRAPH_API = "https://graph.dao.teledisko.com/subgraphs/name/TelediskoDAO/dao"
+SUBGRAPH_API = "https://graph.dao-staging.teledisko.com/subgraphs/name/TelediskoDAO/dao"
 EMAIL_FROM = "test@teledisko.com"
 EMAIL_TO = "miotto@posteo.de"
 EMAIL_CC = "alberto@granzotto.net,stefano.ceschib@gmail.com"

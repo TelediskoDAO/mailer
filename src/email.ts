@@ -19,7 +19,7 @@ async function sendEmail(
     content: body,
     askReceipt: 'no',
   }
-
+  console.log('send mail')
   return await fetch(ZOHO_API_MAIL, {
     body: JSON.stringify(mailBody),
     headers: {
@@ -66,6 +66,7 @@ async function sendToContributors(
   accessToken: string,
   contributors: string[],
   content: string,
+  subject: string,
 ) {
   if (contributors.length == 0) {
     throw new Error(`No recipients.`)
@@ -77,7 +78,7 @@ async function sendToContributors(
     accessToken,
     EMAIL_TO,
     contributors.join(','),
-    'New Offers',
+    subject,
     body,
   )
 }
@@ -90,6 +91,7 @@ async function sendNewOffersEmail(accessToken: string, contributors: string[]) {
       <p>new TelediskoTokens have been offered internally.<br/>
       If you are interested in an exchange, please check them out <a href="https://dao-staging.teledisko.com/#/tokens">in the token page.</a>
       </p>`,
+    'New TelediskoToken offers',
   )
 }
 
@@ -105,6 +107,7 @@ async function sendVotingStartsEmail(
       <p>The voting for <a href="https://dao.teledisko.com/#resolutions/${resolutionId}">the resolution #${resolutionId}</a> starts now!<br/>
       Please case your vote before its expiration.
       </p>`,
+    'Voting starts!',
   )
 }
 
@@ -119,7 +122,12 @@ async function sendResolutionApprovedEmail(
   const votingStartsString = date.toUTCString()
   const content = `<p>Dear Contributor,</p><p>a new resolution has been approved.<br/>The polls open ${votingStartsString}. Remember to cast your vote then.<br>You can find more details <a href="https://dao.teledisko.com/#resolutions/${resolutionId}">on the resolution page.</a></p>`
 
-  return await sendToContributors(accessToken, voters, content)
+  return await sendToContributors(
+    accessToken,
+    voters,
+    content,
+    'New Draft Resolution approved',
+  )
 }
 
 async function sendEmails(
