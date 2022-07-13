@@ -95,7 +95,11 @@ export async function handleVotingStarts(event: FetchEvent | ScheduledEvent) {
   const aMonthAgo = new Date(today - 30 * 24 * 60 * 60 * 1000).getTime()
   const aMonthAgoSeconds = Math.floor(aMonthAgo / 1000)
   const resolutions = await fetchApprovedResolutionsIds(aMonthAgoSeconds, event)
-  const lastVotingEmailSent = 0
+
+  const LAST_VOTING_EMAIL_SENT_KEY = 'lastVotingEmailSent'
+  const lastVotingEmailSent = parseInt(
+    (await MAIN_NAMESPACE.get(LAST_VOTING_EMAIL_SENT_KEY)) || '0',
+  )
 
   // Get those whose approved_timestamp + notice_period is less than today
   // and greater than the last voting email sent
@@ -141,6 +145,13 @@ export async function handleVotingStarts(event: FetchEvent | ScheduledEvent) {
       )
     }
   }
+
+  event.waitUntil(
+    MAIN_NAMESPACE.put(
+      LAST_VOTING_EMAIL_SENT_KEY,
+      JSON.stringify(Math.floor(new Date().getTime() / 1000)),
+    ),
+  )
 
   return new Response('OK')
 }
