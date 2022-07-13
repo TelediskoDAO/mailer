@@ -48,7 +48,10 @@ export async function handleApprovedResolutions(
       (r) =>
         ({
           id: r.id,
-          votingStarts: r.approveTimestamp! + r.resolutionType!.noticePeriod,
+          votingStarts: (
+            parseInt(r.approveTimestamp!) +
+            parseInt(r.resolutionType!.noticePeriod)
+          ).toString(),
         } as ResolutionData),
     )
     const previousFailedIds = await getFailedApprovedEmailResolutions()
@@ -139,8 +142,6 @@ export async function handleVotingStarts(event: FetchEvent | ScheduledEvent) {
           resolutionVotersMap[resolution.id] = emails
         }),
       )
-
-      console.log(resolutionVotersMap)
 
       await sendVotingStartsEmails(
         resolutionVotersMap,
