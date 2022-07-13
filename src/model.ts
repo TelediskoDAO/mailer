@@ -1,13 +1,13 @@
 export type ResolutionType = {
-  noticePeriod: number
-  votingPeriod: number
+  noticePeriod: string
+  votingPeriod: string
 }
 
 export type ResolutionData = {
   id: string
-  createTimestamp?: number
-  approveTimestamp?: number
-  votingStarts?: number
+  createTimestamp?: string
+  approveTimestamp?: string
+  votingStarts?: string
   resolutionType?: ResolutionType
 }
 
@@ -19,5 +19,5 @@ export type OfferData = {
   id: string
   from: string
   amount: number
-  createTimestamp: number
+  createTimestamp: string
 }

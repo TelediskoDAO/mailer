@@ -5,7 +5,7 @@ const LAST_CREATE_TIMESTAMP_KEY = 'lastCreateTimestamp'
 const LAST_APPROVED_TIMESTAMP_KEY = 'lastApprovedTimestamp'
 const LAST_FETCHED_OFFER_TIMESTAMP_KEY = 'lastFetchedOfferTimestamp'
 
-const RESOLUTIONS_QUERY = (timestamp: number) => `
+const RESOLUTIONS_QUERY = (timestamp: string) => `
   query GetResolutions {
     resolutions(orderBy: createTimestamp, orderDirection: asc, where: {createTimestamp_gt: ${timestamp}}) {
       id
@@ -14,7 +14,7 @@ const RESOLUTIONS_QUERY = (timestamp: number) => `
   }
 `
 
-const APPROVED_RESOLUTIONS_QUERY = (timestamp: number) => `
+const APPROVED_RESOLUTIONS_QUERY = (timestamp: string) => `
   query GetApprovedResolutions {
     resolutions(orderBy: approveTimestamp, orderDirection: asc, where: {approveTimestamp_gt: ${timestamp}}) {
       id
@@ -27,7 +27,7 @@ const APPROVED_RESOLUTIONS_QUERY = (timestamp: number) => `
   }
 `
 
-const NEW_OFFERS_QUERY = (timestamp: number) => `
+const NEW_OFFERS_QUERY = (timestamp: string) => `
   query GetNewOffers {
     offers(orderBy: createTimestamp, orderDirection: asc, where: {createTimestamp_gt: ${timestamp}}) {
       id
@@ -120,9 +120,8 @@ async function fetchData(
 export async function fetchLastCreatedResolutions(
   event: FetchEvent | ScheduledEvent,
 ): Promise<ResolutionData[]> {
-  let lastCreateTimestamp = parseInt(
-    (await MAIN_NAMESPACE.get(LAST_CREATE_TIMESTAMP_KEY)) || '0',
-  )
+  let lastCreateTimestamp =
+    (await MAIN_NAMESPACE.get(LAST_CREATE_TIMESTAMP_KEY)) || '0'
 
   const data = (await fetchData(
     event,
@@ -132,23 +131,20 @@ export async function fetchLastCreatedResolutions(
   if (resolutions.length > 0) {
     lastCreateTimestamp = resolutions[resolutions.length - 1].createTimestamp!
     event.waitUntil(
-      MAIN_NAMESPACE.put(
-        LAST_CREATE_TIMESTAMP_KEY,
-        lastCreateTimestamp.toString(),
-      ),
+      MAIN_NAMESPACE.put(LAST_CREATE_TIMESTAMP_KEY, lastCreateTimestamp),
     )
   }
 
   return resolutions
 }
 
-export async function fetchApprovedResolutionsIds(
+export async function fetchApprovedResolutions(
   lastApprovedTimestamp: number,
   event: FetchEvent | ScheduledEvent,
 ): Promise<ResolutionData[]> {
   const data = (await fetchData(
     event,
-    APPROVED_RESOLUTIONS_QUERY(lastApprovedTimestamp),
+    APPROVED_RESOLUTIONS_QUERY(lastApprovedTimestamp.toString()),
   )) as GraphResolutions
 
   return data.resolutions as ResolutionData[]
@@ -157,12 +153,11 @@ export async function fetchApprovedResolutionsIds(
 export async function fetchLastApprovedResolutionIds(
   event: FetchEvent | ScheduledEvent,
 ): Promise<ResolutionData[]> {
-  let lastApprovedTimestamp = parseInt(
-    (await MAIN_NAMESPACE.get(LAST_APPROVED_TIMESTAMP_KEY)) || '0',
-  )
+  let lastApprovedTimestamp =
+    (await MAIN_NAMESPACE.get(LAST_APPROVED_TIMESTAMP_KEY)) || '0'
 
-  const resolutions = await fetchApprovedResolutionsIds(
-    lastApprovedTimestamp,
+  const resolutions = await fetchApprovedResolutions(
+    parseInt(lastApprovedTimestamp),
     event,
   )
 
@@ -170,10 +165,7 @@ export async function fetchLastApprovedResolutionIds(
     lastApprovedTimestamp =
       resolutions[resolutions.length - 1].approveTimestamp!
     event.waitUntil(
-      MAIN_NAMESPACE.put(
-        LAST_APPROVED_TIMESTAMP_KEY,
-        lastApprovedTimestamp.toString(),
-      ),
+      MAIN_NAMESPACE.put(LAST_APPROVED_TIMESTAMP_KEY, lastApprovedTimestamp),
     )
   }
 
@@ -208,9 +200,8 @@ export async function fetchContributors(
 export async function fetchNewOffers(
   event: FetchEvent | ScheduledEvent,
 ): Promise<OfferData[]> {
-  let lastFetchedOfferTimestamp = parseInt(
-    (await MAIN_NAMESPACE.get(LAST_FETCHED_OFFER_TIMESTAMP_KEY)) || '0',
-  )
+  let lastFetchedOfferTimestamp =
+    (await MAIN_NAMESPACE.get(LAST_FETCHED_OFFER_TIMESTAMP_KEY)) || '0'
 
   const data = (await fetchData(
     event,
@@ -223,7 +214,7 @@ export async function fetchNewOffers(
     event.waitUntil(
       MAIN_NAMESPACE.put(
         LAST_FETCHED_OFFER_TIMESTAMP_KEY,
-        lastFetchedOfferTimestamp.toString(),
+        lastFetchedOfferTimestamp,
       ),
     )
   }

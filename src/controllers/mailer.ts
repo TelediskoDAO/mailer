@@ -11,7 +11,7 @@ import { fetchAccessToken } from '../auth'
 import {
   fetchLastCreatedResolutions,
   fetchLastApprovedResolutionIds,
-  fetchApprovedResolutionsIds,
+  fetchApprovedResolutions,
   fetchVoters,
   fetchNewOffers,
   fetchContributors,
@@ -94,7 +94,7 @@ export async function handleVotingStarts(event: FetchEvent | ScheduledEvent) {
   const todaySeconds = Math.floor(today / 1000)
   const aMonthAgo = new Date(today - 30 * 24 * 60 * 60 * 1000).getTime()
   const aMonthAgoSeconds = Math.floor(aMonthAgo / 1000)
-  const resolutions = await fetchApprovedResolutionsIds(aMonthAgoSeconds, event)
+  const resolutions = await fetchApprovedResolutions(aMonthAgoSeconds, event)
 
   const LAST_VOTING_EMAIL_SENT_KEY = 'lastVotingEmailSent'
   const lastVotingEmailSent = parseInt(
@@ -110,14 +110,17 @@ export async function handleVotingStarts(event: FetchEvent | ScheduledEvent) {
   const resolutionsToAlert = resolutions
     .filter(
       (resolution) =>
-        resolution.approveTimestamp! + resolution.resolutionType!.noticePeriod <
+        parseInt(resolution.approveTimestamp!) +
+          parseInt(resolution.resolutionType!.noticePeriod) <
         todaySeconds,
     )
     .filter(
       (resolution) =>
-        resolution.approveTimestamp! + resolution.resolutionType!.noticePeriod >
+        parseInt(resolution.approveTimestamp!) +
+          parseInt(resolution.resolutionType!.noticePeriod) >
         lastVotingEmailSent,
     )
+
   // Send notification to all contributors that can vote that resolution
   const previousFailedIds = await getFailedVotingStartEmailResolutions()
   const totalResolutions = previousFailedIds.concat(resolutionsToAlert)
@@ -137,6 +140,8 @@ export async function handleVotingStarts(event: FetchEvent | ScheduledEvent) {
         }),
       )
 
+      console.log(resolutionVotersMap)
+
       await sendVotingStartsEmails(
         resolutionVotersMap,
         resolutionsToAlert,
@@ -149,7 +154,7 @@ export async function handleVotingStarts(event: FetchEvent | ScheduledEvent) {
   event.waitUntil(
     MAIN_NAMESPACE.put(
       LAST_VOTING_EMAIL_SENT_KEY,
-      JSON.stringify(Math.floor(new Date().getTime() / 1000)),
+      JSON.stringify(todaySeconds),
     ),
   )
 
