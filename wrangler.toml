@@ -23,6 +23,15 @@ EMAIL_TO = "miotto@posteo.de"
 EMAIL_CC = "alberto@granzotto.net,stefano.ceschib@gmail.com"
 ODOO_API = "https://odoo.teledisko.com/jsonrpc"
 
+[env.staging]
+name = "dao-mailer.staging"
+vars = { SUBGRAPH_API = "https://graph.dao-staging.teledisko.com/subgraphs/name/TelediskoDAO/dao", EMAIL_TO = "miotto@posteo.de" }
+
+
+[env.production]
+name = "dao-mailer"
+vars = { SUBGRAPH_API = "https://graph.dao.teledisko.com/subgraphs/name/TelediskoDAO/dao", EMAIL_TO = "nicola.miotto@posteo.de" }
+
 [secrets]
 # ZOHO_CLIENT_ID
 # ZOHO_CLIENT_SECRET

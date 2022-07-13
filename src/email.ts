@@ -19,7 +19,6 @@ async function sendEmail(
     content: body,
     askReceipt: 'no',
   }
-  console.log('send mail')
   return await fetch(ZOHO_API_MAIL, {
     body: JSON.stringify(mailBody),
     headers: {
