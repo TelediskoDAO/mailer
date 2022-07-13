@@ -3,11 +3,7 @@ type = "javascript"
 zone_id = ""
 account_id = "82321a9ff91bb528e4b1d1541178417f"
 route = ""
-workers_dev = true
 compatibility_date = "2022-02-22"
-kv_namespaces = [ 
-         { binding = "MAIN_NAMESPACE", id = "09c8b3bed203411e802783a907d54c32" }
-]
 
 [build]
 command = "npm install && npm run build"
@@ -24,13 +20,19 @@ EMAIL_CC = "alberto@granzotto.net,stefano.ceschib@gmail.com"
 ODOO_API = "https://odoo.teledisko.com/jsonrpc"
 
 [env.staging]
-name = "dao-mailer.staging"
+name = "dao-mailer-staging"
 vars = { SUBGRAPH_API = "https://graph.dao-staging.teledisko.com/subgraphs/name/TelediskoDAO/dao", EMAIL_TO = "miotto@posteo.de" }
-
+kv_namespaces = [ 
+         { binding = "MAIN_NAMESPACE", id = "07d2912b424a4819b70c1a1f8b1147d4" }
+]
 
 [env.production]
 name = "dao-mailer"
+workers_dev = false
 vars = { SUBGRAPH_API = "https://graph.dao.teledisko.com/subgraphs/name/TelediskoDAO/dao", EMAIL_TO = "nicola.miotto@posteo.de" }
+kv_namespaces = [ 
+         { binding = "MAIN_NAMESPACE", id = "7ba16fe2326c4e8ca11848123fa708b9" }
+]
 
 [secrets]
 # ZOHO_CLIENT_ID
