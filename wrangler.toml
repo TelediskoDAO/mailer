@@ -1,4 +1,3 @@
-name = "pre-draft-mailer"
 type = "javascript"
 zone_id = ""
 account_id = "82321a9ff91bb528e4b1d1541178417f"
@@ -10,7 +9,13 @@ command = "npm install && npm run build"
 [build.upload]
 format = "service-worker"
 
-[vars]
+[env.staging]
+workers_dev = true
+name = "dao-mailer-staging"
+kv_namespaces = [ 
+         { binding = "MAIN_NAMESPACE", id = "07d2912b424a4819b70c1a1f8b1147d4" }
+]
+[env.staging.vars]
 ZOHO_API_MAIL = "https://mail.zoho.com/api/accounts/6077046000000008002/messages"
 ZOHO_API_AUTH = "https://accounts.zoho.com/oauth/v2/token"
 SUBGRAPH_API = "https://graph.dao-staging.teledisko.com/subgraphs/name/TelediskoDAO/dao"
@@ -18,27 +23,30 @@ EMAIL_FROM = "test@teledisko.com"
 EMAIL_TO = "miotto@posteo.de"
 EMAIL_CC = "alberto@granzotto.net,stefano.ceschib@gmail.com"
 ODOO_API = "https://odoo.teledisko.com/jsonrpc"
-
-[env.staging]
-workers_dev = true
-name = "dao-mailer-staging"
-vars = { SUBGRAPH_API = "https://graph.dao-staging.teledisko.com/subgraphs/name/TelediskoDAO/dao", EMAIL_TO = "miotto@posteo.de", DAO_URL = "https://dao-staging.teledisko.com" }
-kv_namespaces = [ 
-         { binding = "MAIN_NAMESPACE", id = "07d2912b424a4819b70c1a1f8b1147d4" }
-]
+DAO_URL = "https://dao-staging.teledisko.com"
 
 [env.production]
 name = "dao-mailer"
 workers_dev = false
-vars = { SUBGRAPH_API = "https://graph.dao.teledisko.com/subgraphs/name/TelediskoDAO/dao", EMAIL_TO = "nicola.miotto@posteo.de", DAO_URL = "https://dao.teledisko.com" }
 kv_namespaces = [ 
          { binding = "MAIN_NAMESPACE", id = "7ba16fe2326c4e8ca11848123fa708b9" }
 ]
+[env.production.vars]
+ZOHO_API_MAIL = "https://mail.zoho.com/api/accounts/6077046000000008002/messages"
+ZOHO_API_AUTH = "https://accounts.zoho.com/oauth/v2/token"
+SUBGRAPH_API = "https://graph.dao-staging.teledisko.com/subgraphs/name/TelediskoDAO/dao"
+EMAIL_FROM = "test@teledisko.com"
+EMAIL_TO = "miotto@posteo.de"
+EMAIL_CC = "alberto@granzotto.net,stefano.ceschib@gmail.com"
+ODOO_API = "https://odoo.teledisko.com/jsonrpc"
+DAO_URL = "https://dao.teledisko.com"
 
 [secrets]
 # ZOHO_CLIENT_ID
 # ZOHO_CLIENT_SECRET
 # ZOHO_REFRESH_TOKEN
+# ODOO_USERNAME
+# ODOO_PASSWORD
 
 [miniflare]
 env_path = ".env.test"             # --env
