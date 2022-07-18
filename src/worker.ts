@@ -11,12 +11,15 @@ import {
   handleNewOffers,
   handleVotingStarts,
 } from './controllers/mailer'
+import { fetchOdooUsers } from './odoo'
 
 async function handleEmails(event: ScheduledEvent) {
+  const ethToEmails: any = await fetchOdooUsers(event)
+
   await handleCreatedResolutions(event)
-  await handleApprovedResolutions(event)
-  await handleNewOffers(event)
-  await handleVotingStarts(event)
+  await handleApprovedResolutions(event, ethToEmails)
+  await handleNewOffers(event, ethToEmails)
+  await handleVotingStarts(event, ethToEmails)
 
   return new Response('OK')
 }
@@ -27,15 +30,15 @@ async function handle(event: FetchEvent) {
   }
 
   if (event.request.url.includes('/mails/approved')) {
-    return await handleApprovedResolutions(event)
+    return await handleApprovedResolutions(event, await fetchOdooUsers(event))
   }
 
   if (event.request.url.includes('/mails/offers')) {
-    return await handleNewOffers(event)
+    return await handleNewOffers(event, await fetchOdooUsers(event))
   }
 
   if (event.request.url.includes('/mails/vote')) {
-    return await handleVotingStarts(event)
+    return await handleVotingStarts(event, await fetchOdooUsers(event))
   }
 
   if (event.request.url.includes('/health/auth')) {

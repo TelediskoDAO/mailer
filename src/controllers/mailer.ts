@@ -16,7 +16,6 @@ import {
   fetchNewOffers,
   fetchContributors,
 } from '../graph'
-import { fetchOdooUsers } from '../odoo'
 import { ResolutionData } from '../model'
 
 export async function handleCreatedResolutions(
@@ -40,6 +39,7 @@ export async function handleCreatedResolutions(
 
 export async function handleApprovedResolutions(
   event: FetchEvent | ScheduledEvent,
+  ethToEmails: any,
 ) {
   const accessToken = await fetchAccessToken(event)
 
@@ -57,8 +57,6 @@ export async function handleApprovedResolutions(
     const previousFailedIds = await getFailedApprovedEmailResolutions()
     const totalResolutions = previousFailedIds.concat(newResolutions)
     if (totalResolutions.length > 0) {
-      const ethToEmails: any = await fetchOdooUsers(event)
-
       if (Object.keys(ethToEmails).length > 0) {
         const resolutionVotersMap: any = {}
         await Promise.all(
@@ -85,7 +83,10 @@ export async function handleApprovedResolutions(
   return new Response('OK')
 }
 
-export async function handleVotingStarts(event: FetchEvent | ScheduledEvent) {
+export async function handleVotingStarts(
+  event: FetchEvent | ScheduledEvent,
+  ethToEmails: any,
+) {
   const accessToken = await fetchAccessToken(event)
 
   if (accessToken === undefined) {
@@ -128,8 +129,6 @@ export async function handleVotingStarts(event: FetchEvent | ScheduledEvent) {
   const previousFailedIds = await getFailedVotingStartEmailResolutions()
   const totalResolutions = previousFailedIds.concat(resolutionsToAlert)
   if (totalResolutions.length > 0) {
-    const ethToEmails: any = await fetchOdooUsers(event)
-
     if (Object.keys(ethToEmails).length > 0) {
       const resolutionVotersMap: any = {}
       await Promise.all(
@@ -162,13 +161,15 @@ export async function handleVotingStarts(event: FetchEvent | ScheduledEvent) {
   return new Response('OK')
 }
 
-export async function handleNewOffers(event: FetchEvent | ScheduledEvent) {
+export async function handleNewOffers(
+  event: FetchEvent | ScheduledEvent,
+  ethToEmails: any,
+) {
   const accessToken = await fetchAccessToken(event)
 
   if (accessToken !== undefined) {
     const offers = await fetchNewOffers(event)
     if (offers.length > 0) {
-      const ethToEmails: any = await fetchOdooUsers(event)
       const contributors = await fetchContributors(event)
       const emails = contributors
         .map((contributor) => ethToEmails[contributor.address.toLowerCase()])
