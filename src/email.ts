@@ -104,7 +104,7 @@ async function sendVotingStartsEmail(
     contributors,
     `<p>Dear Contributor,</p> 
       <p>The voting for <a href="${DAO_URL}/#/resolutions/${resolutionId}">the resolution #${resolutionId}</a> starts now!<br/>
-      Please case your vote before its expiration.
+      Please cast your vote before its expiration.
       </p>`,
     'Voting starts!',
   )
