@@ -11,7 +11,7 @@ format = "service-worker"
 
 [env.staging]
 workers_dev = true
-name = "dao-mailer-staging"
+name = "teledisko-mailer-staging"
 kv_namespaces = [ 
          { binding = "MAIN_NAMESPACE", id = "07d2912b424a4819b70c1a1f8b1147d4" }
 ]
@@ -26,7 +26,7 @@ ODOO_API = "https://odoo.teledisko.com/jsonrpc"
 DAO_URL = "https://dao-staging.teledisko.com"
 
 [env.production]
-name = "dao-mailer"
+name = "teledisko-mailer"
 workers_dev = false
 kv_namespaces = [ 
          { binding = "MAIN_NAMESPACE", id = "7ba16fe2326c4e8ca11848123fa708b9" }
