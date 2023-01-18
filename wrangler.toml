@@ -27,7 +27,7 @@ DAO_URL = "https://dao-staging.teledisko.com"
 
 [env.production]
 name = "teledisko-mailer"
-workers_dev = false
+workers_dev = true
 kv_namespaces = [ 
          { binding = "MAIN_NAMESPACE", id = "a0b708c029014b33a11de9cd1cc1dbf6" }
 ]
