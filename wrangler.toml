@@ -13,7 +13,7 @@ format = "service-worker"
 workers_dev = true
 name = "teledisko-mailer-staging"
 kv_namespaces = [ 
-         { binding = "MAIN_NAMESPACE", id = "07d2912b424a4819b70c1a1f8b1147d4" }
+         { binding = "MAIN_NAMESPACE", id = "89a5769623b94eb89c5e125ca58f48a0" }
 ]
 [env.staging.vars]
 ZOHO_API_MAIL = "https://mail.zoho.com/api/accounts/6077046000000008002/messages"
@@ -29,7 +29,7 @@ DAO_URL = "https://dao-staging.teledisko.com"
 name = "teledisko-mailer"
 workers_dev = false
 kv_namespaces = [ 
-         { binding = "MAIN_NAMESPACE", id = "7ba16fe2326c4e8ca11848123fa708b9" }
+         { binding = "MAIN_NAMESPACE", id = "a0b708c029014b33a11de9cd1cc1dbf6" }
 ]
 [env.production.vars]
 ZOHO_API_MAIL = "https://mail.zoho.com/api/accounts/6077046000000008002/messages"
