@@ -1,13 +1,11 @@
-type = "javascript"
-zone_id = ""
+name = "teledisko-mailer"
+main = "dist/index.mjs"
+compatibility_date = "2022-05-28"
+compatibility_flags = []
 account_id = "82321a9ff91bb528e4b1d1541178417f"
-route = ""
-compatibility_date = "2022-02-22"
 
 [build]
-command = "npm install && npm run build"
-[build.upload]
-format = "service-worker"
+command = "node build.js"
 
 [env.staging]
 workers_dev = true
@@ -34,7 +32,7 @@ kv_namespaces = [
 [env.production.vars]
 ZOHO_API_MAIL = "https://mail.zoho.com/api/accounts/6077046000000008002/messages"
 ZOHO_API_AUTH = "https://accounts.zoho.com/oauth/v2/token"
-SUBGRAPH_API = "https://graph.dao.teledisko.com/subgraphs/name/TelediskoDAO/dao"
+SUBGRAPH_API = "https://api.neokingdom.org/subgraphs/name/TelediskoDAO/dao"
 EMAIL_FROM = "dao@teledisko.com"
 EMAIL_TO = "benjamin@teledisko.com"
 EMAIL_CC = "alberto@granzotto.net,stefano.ceschib@gmail.com,miotto@posteo.de"

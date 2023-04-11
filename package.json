@@ -1,10 +1,11 @@
 {
-  "name": "worker-typescript-template",
+  "name": "teledisko-mailer",
   "version": "1.0.0",
-  "description": "Cloudflare worker TypeScript template",
-  "main": "dist/worker.js",
+  "description": "Teledisko Mailer",
+  "type": "module",
+  "module": "./dist/index.mjs",
   "scripts": {
-    "build": "webpack",
+    "build": "node build.js",
     "format": "prettier --write  '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "lint": "eslint --max-warnings=0 src && prettier --check '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "test": "jest --config jestconfig.json --verbose",
@@ -20,8 +21,9 @@
     ]
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^3.4.0",
-    "@types/jest": "^26.0.23",
+    "@cloudflare/workers-types": "^3.11.0",
+    "@types/jest": "^27.5.1",
+    "esbuild": "^0.14.41",
     "@types/service-worker-mock": "^2.0.1",
     "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^4.16.1",
@@ -29,15 +31,17 @@
     "eslint": "^7.21.0",
     "eslint-config-prettier": "^8.1.0",
     "eslint-config-typescript": "^3.0.0",
-    "jest": "^27.0.1",
-    "miniflare": "^2.3.0",
-    "prettier": "^2.3.0",
+    "jest": "^28.1.0",
+    "jest-environment-miniflare": "^2.5.0",
+    "miniflare": "^2.5.0",
+    "prettier": "^2.6.2",
     "service-worker-mock": "^2.0.5",
-    "ts-jest": "^27.0.1",
+    "ts-jest": "^28.0.3",
     "ts-loader": "^9.2.2",
-    "typescript": "^4.3.2",
+    "typescript": "^4.7.2",
     "webpack": "^5.38.1",
-    "webpack-cli": "^4.7.0"
+    "webpack-cli": "^4.7.0",
+    "wrangler": "^2.0.7"
   },
   "dependencies": {
     "crypto-browserify": "^3.12.0",
@@ -47,7 +51,6 @@
     "url": "^0.11.0",
     "uuid": "^8.3.2",
     "web3-eth-contract": "^1.7.0",
-    "web3-utils": "^1.7.0",
-    "wrangler": "^0.0.17"
+    "web3-utils": "^1.7.0"
   }
 }
