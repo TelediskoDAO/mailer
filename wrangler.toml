@@ -32,7 +32,7 @@ kv_namespaces = [
 [env.production.vars]
 ZOHO_API_MAIL = "https://mail.zoho.com/api/accounts/6077046000000008002/messages"
 ZOHO_API_AUTH = "https://accounts.zoho.com/oauth/v2/token"
-SUBGRAPH_API = "https://api.neokingdom.org/subgraphs/name/TelediskoDAO/dao"
+SUBGRAPH_API = "https://api2.neokingdom.org/subgraphs/name/TelediskoDAO/vigodarzere"
 EMAIL_FROM = "dao@teledisko.com"
 EMAIL_TO = "benjamin@teledisko.com"
 EMAIL_CC = "alberto@granzotto.net,stefano.ceschib@gmail.com,miotto@posteo.de"
